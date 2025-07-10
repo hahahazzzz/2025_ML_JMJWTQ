@@ -162,7 +162,7 @@ def train_models(X_train: np.ndarray,
     
     if verbose:
         print(f"\n{'='*60}")
-        print(f"🎉 所有模型训练完成！")
+        print(f"所有模型训练完成！")
         print(f"总用时: {total_time:.2f} 秒 ({total_time/60:.1f} 分钟)")
         print(f"平均每个模型: {total_time/(num_classes-1):.2f} 秒")
         print(f"训练了 {len(models)} 个二分类器")
