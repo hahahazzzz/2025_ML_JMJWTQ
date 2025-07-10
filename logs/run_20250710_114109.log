@@ -1,0 +1,18 @@
+2025-07-10 11:41:09,432 - MovieRecommender - INFO - 保存实验配置到: experiments/LightGBM_CORAL_20250710_114109/config.json
+2025-07-10 11:41:09,432 - MovieRecommender - INFO - 创建实验: LightGBM_CORAL_20250710_114109
+2025-07-10 11:41:09,432 - MovieRecommender - INFO - 保存实验配置到: experiments/LightGBM_CORAL_20250710_114109/config.json
+2025-07-10 11:41:09,432 - MovieRecommender - INFO - 开始执行推荐系统模型训练与评估
+2025-07-10 11:41:09,432 - MovieRecommender - INFO - Step 1: 加载数据
+2025-07-10 11:41:09,462 - MovieRecommender - INFO - Step 2: 特征工程
+2025-07-10 11:41:09,943 - MovieRecommender - INFO - Step 3: 定义特征列
+2025-07-10 11:41:09,943 - MovieRecommender - INFO - Step 4: 划分训练集和验证集
+2025-07-10 11:41:10,237 - MovieRecommender - INFO - Step 5: 开始训练模型
+2025-07-10 11:42:56,613 - MovieRecommender - INFO - Step 6: 模型预测
+2025-07-10 11:42:56,852 - MovieRecommender - INFO - Step 7: 模型评估
+2025-07-10 11:42:56,853 - MovieRecommender - INFO - RMSE: 0.7495
+2025-07-10 11:42:56,853 - MovieRecommender - INFO - 记录指标: RMSE = 0.7495353752082183
+2025-07-10 11:42:56,858 - MovieRecommender - INFO - 预测结果已保存至: output/predictions.csv
+2025-07-10 11:42:56,862 - MovieRecommender - INFO - 保存DataFrame到: experiments/LightGBM_CORAL_20250710_114109/predictions
+2025-07-10 11:42:56,862 - MovieRecommender - INFO - Step 8: 生成可视化图表
+2025-07-10 11:43:00,782 - MovieRecommender - INFO - 执行完成，总耗时: 111.35 秒
+2025-07-10 11:43:00,782 - MovieRecommender - INFO - 保存实验结果到: experiments/LightGBM_CORAL_20250710_114109/results.json

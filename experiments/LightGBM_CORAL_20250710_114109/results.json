@@ -1,0 +1,14 @@
+{
+    "RMSE": [
+        {
+            "value": 0.7495353752082183
+        }
+    ],
+    "execution_time": 111.34936380386353,
+    "rmse": 0.7495353752082183,
+    "model_params": {
+        "n_estimators": 1000,
+        "learning_rate": 0.05,
+        "num_leaves": 63
+    }
+}

@@ -1,0 +1,179 @@
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 日志系统初始化完成 - 目录: logs, 级别: INFO
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - ============================================================
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始电影推荐系统训练
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - ============================================================
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 输出目录: output
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 保存实验配置到: experiments/LightGBM_CORAL_MovieLens_20250710_142624/config.json
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 创建实验: LightGBM_CORAL_MovieLens_20250710_142624
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 实验目录: experiments/LightGBM_CORAL_MovieLens_20250710_142624
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 实验ID: LightGBM_CORAL_MovieLens_20250710_142624
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+======================================== 数据加载 ========================================
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始加载数据文件
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 加载评分数据: /Users/ming/Desktop/ml-latest-small/ratings.csv
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 生成时间相关特征
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 加载电影数据: /Users/ming/Desktop/ml-latest-small/movies.csv
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 加载标签数据: /Users/ming/Desktop/ml-latest-small/tags.csv
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始数据预处理和异常值检测
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始检测评分数据异常值
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 执行基本数据质量检查
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 检测评分范围异常
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 检测用户行为异常
+2025-07-10 14:26:24 - MovieRecommender - WARNING - warning:219 - 发现 15 个异常行为用户
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 检测时间序列异常
+2025-07-10 14:26:24 - MovieRecommender - WARNING - warning:219 - 发现 597 个时间行为异常用户
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 执行多维异常检测
+2025-07-10 14:26:24 - MovieRecommender - WARNING - warning:219 - 发现 61 个多维异常用户
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 异常值检测完成:
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 总记录数: 100836
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 总异常值: 99928 (99.10%)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - is_basic_outlier: 0 (0.0%)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - is_range_outlier: 0 (0.0%)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - is_behavior_outlier: 20489 (20.32%)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - is_temporal_outlier: 96070 (95.27%)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - is_multivariate_outlier: 40258 (39.92%)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 使用策略 'flag' 处理异常值
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 数据预处理完成
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 数据加载完成:
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   评分记录数: 100,836
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   电影数量: 9,742
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   标签记录数: 3,683
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   用户数量: 610
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   评分范围: 0.5 - 5.0
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   时间范围: 1996-03-29 18:36:55 - 2018-09-24 14:27:30
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 记录指标: data_quality_score = 0
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 记录指标: outlier_count = 0
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 记录指标: outlier_ratio = 0
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 数据质量评分: N/A
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 异常值数量: N/A
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+======================================== 特征工程 ========================================
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+--- 创建协同过滤特征 ---
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始创建协同过滤特征，隐因子维度: 20
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 训练集统计: 610个用户, 9724个物品, 100836条评分
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始训练SVD模型...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - SVD模型训练完成
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 提取用户和物品隐因子...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 协同过滤特征创建完成:
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   用户隐因子: (610, 21)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   物品隐因子: (9724, 21)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   用户偏置: (610, 2)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   物品偏置: (9724, 2)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+--- 创建内容特征 ---
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始创建电影内容特征
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 提取电影发行年份...
+2025-07-10 14:26:24 - MovieRecommender - WARNING - warning:219 - 有13部电影缺少年份信息，将使用均值填充
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 标准化年份特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 处理电影类型特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 识别到20种电影类型: ['(no genres listed)', 'Action', 'Adventure', 'Animation', 'Children', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'IMAX', 'Musical', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western']
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并内容特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 内容特征创建完成:
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   特征维度: (9742, 22)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   年份范围: -5.00 - 1.26 (标准化后)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   类型数量: 20
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+--- 创建TF-IDF标签特征 ---
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始创建TF-IDF标签特征，目标维度: 100
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 聚合用户-电影标签文档...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 聚合后标签记录数: 1775，原始标签数: 3683
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并标签与评分数据...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 标签覆盖率: 1.6% (1635/100836)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 初始化TF-IDF向量化器...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 生成TF-IDF特征矩阵...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - TF-IDF矩阵形状: (100836, 100)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 词汇表大小: 100
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 转换为DataFrame格式...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - TF-IDF标签特征创建完成:
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   评分+标签数据: (100836, 15)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   TF-IDF特征: (100836, 100)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   平均非零特征数: 0.02
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+--- 创建用户画像特征 ---
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始创建用户画像特征
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 计算用户评分统计特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 用户统计特征: (610, 4)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 平均评分范围: 1.27 - 5.00
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 平均评分数量: 165.3
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 计算用户类型偏好特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 用户类型偏好特征: (610, 952)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 识别类型数量: 951
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 用户画像特征创建完成:
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   统计特征: (610, 3)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 -   类型偏好特征: (610, 952)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+--- 创建电影画像特征 ---
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始创建电影画像特征
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 计算电影评分统计特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 电影画像特征创建完成: (9724, 4)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 电影平均评分范围: 0.50 - 5.00
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 电影评分数量范围: 1 - 329
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 平均每部电影评分数: 10.4
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 
+--- 合并所有特征 ---
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 开始合并所有特征
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 以评分+标签数据为基础...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 基础数据形状: (100836, 15)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并电影内容特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 36)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并用户隐因子特征...
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 56)
+2025-07-10 14:26:24 - MovieRecommender - INFO - info:204 - 合并电影隐因子特征...
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 76)
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并用户偏置特征...
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 77)
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并电影偏置特征...
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 78)
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并用户统计特征...
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 80)
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并用户类型偏好特征...
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 1031)
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并电影统计特征...
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 1034)
+2025-07-10 14:26:25 - MovieRecommender - INFO - info:204 - 合并TF-IDF标签特征...
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 合并后形状: (100836, 1134)
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 生成20个用户-物品交叉特征...
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 交叉特征生成完成: ['cross_f0', 'cross_f1', 'cross_f2', 'cross_f3', 'cross_f4', 'cross_f5', 'cross_f6', 'cross_f7', 'cross_f8', 'cross_f9', 'cross_f10', 'cross_f11', 'cross_f12', 'cross_f13', 'cross_f14', 'cross_f15', 'cross_f16', 'cross_f17', 'cross_f18', 'cross_f19']
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 特征合并完成:
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   最终数据形状: (100836, 1154)
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   新增特征数: 1139
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   总特征数: 1154
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   数据完整性: 100.0%
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 
+======================================== 数据准备 ========================================
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 转换评分为分类标签...
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 标签分布: {0: 1370, 1: 2811, 2: 1791, 3: 7551, 4: 5550, 5: 20047, 6: 13136, 7: 26818, 8: 8551, 9: 13211}
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 
+--- 定义特征列 ---
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 可用特征数量: 1141
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 特征类型分布:
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 电影类型特征: 20
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 用户偏好特征: 951
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 协同过滤特征: 60
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 标签特征: 100
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 
+--- 数据划分 ---
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 使用Leave-5-out策略划分训练集和验证集...
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 - 用户统计:
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 有验证集的用户: 610
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 无验证集的用户: 0
+2025-07-10 14:26:26 - MovieRecommender - INFO - info:204 -   - 总用户数: 610
+2025-07-10 14:26:27 - MovieRecommender - INFO - info:204 - 数据集大小:
+2025-07-10 14:26:27 - MovieRecommender - INFO - info:204 -   - 训练集: 97,786 (97.0%)
+2025-07-10 14:26:27 - MovieRecommender - INFO - info:204 -   - 验证集: 3,050 (3.0%)
+2025-07-10 14:26:27 - MovieRecommender - INFO - info:204 - 
+======================================== 模型训练 ========================================
+2025-07-10 14:26:27 - MovieRecommender - INFO - info:204 - 开始训练CORAL风格的LightGBM序数分类器...
+2025-07-10 14:26:27 - MovieRecommender - ERROR - error:237 - 程序执行过程中发生错误: 输入的特征和标签必须是numpy数组
+2025-07-10 14:26:27 - MovieRecommender - ERROR - error:237 - 错误类型: ValueError
+2025-07-10 14:26:27 - MovieRecommender - ERROR - error:237 - 错误详情:
+Traceback (most recent call last):
+  File "/Users/ming/Documents/Code/Pytorch/2025_ML_Code/main.py", line 197, in main
+    models = train_models(X_train, y_train_raw, config.num_classes, config.seed)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ming/Documents/Code/Pytorch/2025_ML_Code/models/train_eval.py", line 142, in train_models
+    raise ValueError("输入的特征和标签必须是numpy数组")
+ValueError: 输入的特征和标签必须是numpy数组
+
+2025-07-10 14:26:27 - MovieRecommender - INFO - info:204 - 保存实验结果到: experiments/LightGBM_CORAL_MovieLens_20250710_142624/results.json

@@ -1,0 +1,15 @@
+2025-07-10 12:37:10,781 - MovieRecommender - INFO - 保存实验配置到: experiments/LightGBM_CORAL_20250710_123710/config.json
+2025-07-10 12:37:10,781 - MovieRecommender - INFO - 创建实验: LightGBM_CORAL_20250710_123710
+2025-07-10 12:37:10,781 - MovieRecommender - INFO - 保存实验配置到: experiments/LightGBM_CORAL_20250710_123710/config.json
+2025-07-10 12:37:10,781 - MovieRecommender - INFO - 开始执行推荐系统模型训练与评估
+2025-07-10 12:37:10,781 - MovieRecommender - INFO - Step 1: 加载数据
+2025-07-10 12:37:10,826 - MovieRecommender - INFO - Step 2: 特征工程
+2025-07-10 12:37:10,826 - MovieRecommender - INFO - 创建协同过滤特征 (SVD隐因子)
+2025-07-10 12:37:10,964 - MovieRecommender - INFO - 创建内容特征 (电影类型、年份)
+2025-07-10 12:37:10,971 - MovieRecommender - INFO - 创建TF-IDF标签特征
+2025-07-10 12:37:11,039 - MovieRecommender - INFO - 创建用户画像特征 (评分统计、类型偏好)
+2025-07-10 12:37:11,078 - MovieRecommender - INFO - 创建电影画像特征 (评分统计)
+2025-07-10 12:37:11,080 - MovieRecommender - INFO - 创建时间序列特征 (评分趋势、周期性特征)
+2025-07-10 12:37:11,898 - MovieRecommender - INFO - 创建图结构特征 (交互网络拓扑特性)
+2025-07-10 12:37:15,335 - MovieRecommender - INFO - 合并特征 - 整合多源特征
+2025-07-10 12:37:15,779 - MovieRecommender - INFO - 添加序数分类标签
