@@ -3,31 +3,7 @@
 """
 特征可视化模块
 
-本模块提供了机器学习项目中特征分析和可视化的核心功能，
-主要用于理解特征重要性、特征分布和特征间相关性。
-
-主要功能:
-    - 特征重要性可视化：展示模型中最重要的特征
-    - 特征相关性分析：分析特征与目标变量的相关性
-    - 特征分布可视化：展示特征的统计分布特征
-    - 潜在因子聚合：将相似的潜在特征进行分组分析
-
-特性:
-    - 支持多种特征类型（数值型、分类型、潜在因子）
-    - 提供可解释特征的白名单过滤
-    - 自动处理缺失值和异常值
-    - 生成高质量的可视化图表
-    - 支持批量模型的特征重要性聚合
-
-使用场景:
-    - 模型解释性分析
-    - 特征工程验证
-    - 数据探索性分析
-    - 模型调优指导
-
-Author: Assistant
-Date: 2024
-Version: 2.0
+提供特征分析和可视化功能，包括特征重要性、相关性分析和分布可视化
 """
 
 import os
@@ -58,36 +34,17 @@ def plot_top20_feature_importance(models: List[Any],
     """
     绘制Top N特征重要性条形图
     
-    通过条形图展示模型中最重要的特征，支持多模型聚合和潜在因子分组，
-    有助于理解模型的决策依据和特征贡献度。
-    
     Args:
-        models (List[Any]): 训练好的模型列表（需要有feature_importances_属性）
-        X_train (pd.DataFrame): 训练集特征DataFrame
-        whitelist_features (Optional[List[str]]): 可解释特征白名单列表，
-                                                如果为None则使用config中的白名单
-        save_path (Optional[str]): 图片保存路径，如果为None则使用默认路径
-        figsize (Tuple[int, int]): 图表尺寸，默认为(12, 8)
-        top_n (int): 显示前N个重要特征，默认为20
-        show_values (bool): 是否在条形图上显示数值，默认为True
+        models: 训练好的模型列表
+        X_train: 训练集特征DataFrame
+        whitelist_features: 可解释特征白名单列表
+        save_path: 图片保存路径
+        figsize: 图表尺寸
+        top_n: 显示前N个重要特征
+        show_values: 是否在条形图上显示数值
     
     Returns:
-        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None
-    
-    Raises:
-        ValueError: 当输入参数无效时抛出异常
-        TypeError: 当参数类型不正确时抛出异常
-    
-    Example:
-        >>> from lightgbm import LGBMRegressor
-        >>> models = [LGBMRegressor().fit(X_train, y_train) for _ in range(3)]
-        >>> fig = plot_top20_feature_importance(models, X_train)
-    
-    Note:
-        - 支持多个模型的特征重要性聚合（取平均值）
-        - 自动将潜在因子特征分组（如user_f0-f19聚合为user_latent_factors）
-        - 优先显示可解释特征，潜在因子作为补充
-        - 特征重要性基于模型的内置重要性计算方法
+        matplotlib图表对象
     """
     # 参数验证
     if not models:

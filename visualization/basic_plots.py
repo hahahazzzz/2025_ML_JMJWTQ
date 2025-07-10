@@ -3,49 +3,7 @@
 """
 基本可视化图表模块
 
-该模块提供了电影推荐系统的基础可视化功能，主要包括：
-1. 评分分布可视化：真实评分与预测评分的对比分析
-2. 预测结果分析：预测评分的分布特征和统计特性
-3. 模型性能可视化：通过图表直观展示模型预测效果
-4. 数据质量检查：通过可视化发现数据异常和模式
-
-主要功能：
-- 箱线图分析：展示不同真实评分下的预测评分分布
-- 直方图分析：展示预测评分的整体分布特征
-- 散点图分析：展示真实评分与预测评分的相关性
-- 统计图表：提供详细的数值统计信息
-
-可视化特性：
-- 使用专业的配色方案和图表样式
-- 自动保存高质量图片文件
-- 支持中文标签和注释
-- 提供详细的图例和标题
-- 自动调整图表布局和尺寸
-
-使用方式：
-    from visualization.basic_plots import plot_boxplot_true_vs_pred, plot_predicted_rating_hist
-    
-    # 绘制箱线图
-    plot_boxplot_true_vs_pred(predictions_df)
-    
-    # 绘制直方图
-    plot_predicted_rating_hist(predictions_df)
-
-输出文件：
-    所有图表自动保存到配置指定的输出目录中：
-    - boxplot_true_vs_pred.png: 真实vs预测评分箱线图
-    - predicted_rating_hist.png: 预测评分分布直方图
-    - scatter_true_vs_pred.png: 真实vs预测评分散点图
-
-依赖库：
-    - matplotlib: 基础绘图功能
-    - seaborn: 高级统计图表
-    - pandas: 数据处理
-    - numpy: 数值计算
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供电影推荐系统的基础可视化功能，包括评分分布、预测结果分析等
 """
 
 import os
@@ -73,38 +31,14 @@ def plot_boxplot_true_vs_pred(output_df: pd.DataFrame,
     """
     绘制真实评分与预测评分的箱线图
     
-    通过箱线图展示不同真实评分等级下预测评分的分布特征，
-    包括中位数、四分位数、异常值等统计信息。有助于分析模型
-    在不同评分等级上的预测准确性和一致性。
-    
     Args:
-        output_df (pd.DataFrame): 包含真实评分和预测评分的DataFrame
-                                必须包含'true_rating'和'pred_rating'列
-        save_path (Optional[str]): 图片保存路径，如果为None则使用默认路径
-        figsize (Tuple[int, int]): 图表尺寸，默认为(10, 8)
-        show_stats (bool): 是否在图表上显示统计信息，默认为True
+        output_df: 包含'true_rating'和'pred_rating'列的DataFrame
+        save_path: 图片保存路径
+        figsize: 图表尺寸
+        show_stats: 是否显示统计信息
     
     Returns:
-        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None
-    
-    Raises:
-        ValueError: 当DataFrame缺少必要列时抛出异常
-        TypeError: 当参数类型不正确时抛出异常
-    
-    Example:
-        >>> predictions_df = pd.DataFrame({
-        ...     'true_rating': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5],
-        ...     'pred_rating': [1.2, 2.1, 2.9, 4.1, 4.8, 0.9, 2.3, 3.2, 3.9, 5.1]
-        ... })
-        >>> fig = plot_boxplot_true_vs_pred(predictions_df)
-    
-    Note:
-        - 箱线图显示每个真实评分等级的预测评分分布
-        - 箱体表示25%-75%分位数范围
-        - 中线表示中位数
-        - 须线表示1.5倍IQR范围
-        - 圆点表示异常值
-        - 自动保存为高分辨率PNG格式
+        matplotlib图表对象
     """
     # 参数验证
     if not isinstance(output_df, pd.DataFrame):

@@ -3,17 +3,7 @@
 """
 模型工具函数模块
 
-该模块提供了电影推荐系统中模型相关的工具函数，主要包括：
-1. 序数分类（Ordinal Classification）相关函数
-2. 评分与标签之间的转换函数
-3. 预测结果处理函数
-
-序数分类是一种特殊的分类任务，其中类别之间存在自然的顺序关系。
-在电影评分预测中，评分1.0 < 1.5 < 2.0 < ... < 5.0，因此适合使用序数分类方法。
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供序数分类和评分标签转换工具
 """
 
 import numpy as np
@@ -28,31 +18,12 @@ def generate_ordinal_targets(y: np.ndarray, num_classes: int = 10) -> np.ndarray
     """
     生成序数分类的目标标签矩阵
     
-    该函数将原始的评分标签转换为序数分类所需的二进制矩阵格式。
-    序数分类的核心思想是将一个K类问题转换为K-1个二分类问题。
-    
-    算法原理:
-        对于评分r和阈值t_i，如果r > t_i，则对应位置为1，否则为0。
-        例如：评分3.5对应标签7，则前7个阈值都为1，后面为0：[1,1,1,1,1,1,1,0,0]
-    
     Args:
-        y (np.ndarray): 原始评分标签数组，形状为(n_samples,)
-                       标签值范围应为0到num_classes-1
-        num_classes (int, optional): 总类别数量，默认为10
-                                   对应评分0.5, 1.0, 1.5, ..., 5.0
+        y: 原始评分标签数组
+        num_classes: 总类别数量
     
     Returns:
-        np.ndarray: 序数目标矩阵，形状为(n_samples, num_classes-1)
-                   每行表示一个样本的序数编码
-    
-    Raises:
-        ValueError: 当输入参数不合法时抛出异常
-    
-    Example:
-        >>> y = np.array([0, 2, 5, 9])  # 对应评分0.5, 1.5, 3.0, 5.0
-        >>> ordinal_targets = generate_ordinal_targets(y, num_classes=10)
-        >>> print(ordinal_targets.shape)  # (4, 9)
-        >>> print(ordinal_targets[1])     # [1, 1, 0, 0, 0, 0, 0, 0, 0] (标签2)
+        序数目标矩阵
     """
     # 参数验证
     if not isinstance(y, np.ndarray):
@@ -84,31 +55,12 @@ def convert_ordinal_to_class(preds: np.ndarray, threshold: float = 0.5) -> np.nd
     """
     将序数分类的预测概率转换为最终的类别预测
     
-    该函数将模型输出的序数概率矩阵转换为具体的类别标签。
-    转换方法是统计每个样本中超过阈值的预测数量。
-    
-    算法原理:
-        对于预测概率矩阵的每一行，统计大于threshold的元素个数，
-        该个数即为预测的类别标签。
-    
     Args:
-        preds (np.ndarray): 序数预测概率矩阵，形状为(n_samples, num_classes-1)
-                          每个元素表示对应阈值的预测概率
-        threshold (float, optional): 二分类阈值，默认为0.5
-                                   概率大于该值被认为是正类
+        preds: 序数预测概率矩阵
+        threshold: 二分类阈值
     
     Returns:
-        np.ndarray: 类别预测数组，形状为(n_samples,)
-                   每个元素为预测的类别标签(0到num_classes-1)
-    
-    Raises:
-        ValueError: 当输入参数不合法时抛出异常
-    
-    Example:
-        >>> preds = np.array([[0.9, 0.8, 0.3, 0.1],  # 预测类别2
-        ...                   [0.9, 0.9, 0.9, 0.9]])  # 预测类别4
-        >>> classes = convert_ordinal_to_class(preds, threshold=0.5)
-        >>> print(classes)  # [2, 4]
+        类别预测数组
     """
     # 参数验证
     if not isinstance(preds, np.ndarray):
@@ -133,26 +85,11 @@ def rating_to_label(rating: Union[float, np.ndarray]) -> Union[int, np.ndarray]:
     """
     将连续的评分值转换为离散的标签值
     
-    该函数将MovieLens数据集中的评分(0.5-5.0)转换为模型训练所需的标签(0-9)。
-    转换公式: label = (rating - 0.5) * 2
-    
-    评分到标签的映射关系:
-        0.5 -> 0, 1.0 -> 1, 1.5 -> 2, ..., 4.5 -> 8, 5.0 -> 9
-    
     Args:
-        rating (Union[float, np.ndarray]): 评分值，范围为[0.5, 5.0]
-                                         可以是单个值或数组
+        rating: 评分值
     
     Returns:
-        Union[int, np.ndarray]: 对应的标签值，范围为[0, 9]
-                               返回类型与输入类型一致
-    
-    Raises:
-        ValueError: 当评分值超出有效范围时抛出异常
-    
-    Example:
-        >>> rating_to_label(3.5)  # 返回 6
-        >>> rating_to_label(np.array([1.0, 2.5, 4.0]))  # 返回 [1, 4, 7]
+        对应的标签值
     """
     # 处理数组输入
     if isinstance(rating, np.ndarray):
@@ -182,26 +119,11 @@ def label_to_rating(label: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
     """
     将离散的标签值转换为连续的评分值
     
-    该函数将模型预测的标签(0-9)转换回MovieLens评分系统的评分(0.5-5.0)。
-    转换公式: rating = 0.5 + 0.5 * label
-    
-    标签到评分的映射关系:
-        0 -> 0.5, 1 -> 1.0, 2 -> 1.5, ..., 8 -> 4.5, 9 -> 5.0
-    
     Args:
-        label (Union[int, np.ndarray]): 标签值，范围为[0, 9]
-                                      可以是单个值或数组
+        label: 标签值
     
     Returns:
-        Union[float, np.ndarray]: 对应的评分值，范围为[0.5, 5.0]
-                                返回类型与输入类型一致
-    
-    Raises:
-        ValueError: 当标签值超出有效范围时抛出异常
-    
-    Example:
-        >>> label_to_rating(6)  # 返回 3.5
-        >>> label_to_rating(np.array([1, 4, 7]))  # 返回 [1.0, 2.5, 4.0]
+        对应的评分值
     """
     # 处理数组输入
     if isinstance(label, np.ndarray):
@@ -230,18 +152,12 @@ def validate_predictions(predictions: np.ndarray,
     """
     验证预测结果的有效性
     
-    检查预测的评分是否在合理范围内，用于模型输出的质量控制。
-    
     Args:
-        predictions (np.ndarray): 预测的评分数组
-        expected_range (Tuple[float, float], optional): 期望的评分范围，默认为(0.5, 5.0)
+        predictions: 预测的评分数组
+        expected_range: 期望的评分范围
     
     Returns:
-        bool: 如果所有预测都在有效范围内返回True，否则返回False
-    
-    Example:
-        >>> preds = np.array([1.0, 2.5, 4.0, 5.0])
-        >>> validate_predictions(preds)  # 返回 True
+        如果所有预测都在有效范围内返回True，否则返回False
     """
     if not isinstance(predictions, np.ndarray):
         predictions = np.array(predictions)

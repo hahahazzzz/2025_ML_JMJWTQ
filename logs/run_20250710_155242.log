@@ -1,0 +1,42 @@
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 日志系统初始化完成 - 目录: logs, 级别: INFO
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - ============================================================
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 开始电影推荐系统训练
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - ============================================================
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 输出目录: output
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 保存实验配置到: experiments/LightGBM_CORAL_MovieLens_20250710_155242/config.json
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 创建实验: LightGBM_CORAL_MovieLens_20250710_155242
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 实验目录: experiments/LightGBM_CORAL_MovieLens_20250710_155242
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 实验ID: LightGBM_CORAL_MovieLens_20250710_155242
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 
+======================================== 数据加载 ========================================
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 开始加载数据文件
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 加载评分数据: /data/ratings.csv
+2025-07-10 15:52:42 - MovieRecommender - ERROR - error:237 - 数据文件未找到: [Errno 2] No such file or directory: '/data/ratings.csv'
+2025-07-10 15:52:42 - MovieRecommender - ERROR - error:237 - 程序执行过程中发生错误: [Errno 2] No such file or directory: '/data/ratings.csv'
+2025-07-10 15:52:42 - MovieRecommender - ERROR - error:237 - 错误类型: FileNotFoundError
+2025-07-10 15:52:42 - MovieRecommender - ERROR - error:237 - 错误详情:
+Traceback (most recent call last):
+  File "/Users/ming/Documents/Code/Pytorch/2025_ML_Code/main.py", line 126, in main
+    ratings, movies, tags, preprocessing_report = load_data(
+                                                  ^^^^^^^^^^
+  File "/Users/ming/Documents/Code/Pytorch/2025_ML_Code/data/data_loader.py", line 55, in load_data
+    ratings = pd.read_csv(config.ratings_file)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/pytorch-env/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/pytorch-env/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/pytorch-env/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/pytorch-env/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/anaconda3/envs/pytorch-env/lib/python3.11/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/data/ratings.csv'
+
+2025-07-10 15:52:42 - MovieRecommender - INFO - info:204 - 保存实验结果到: experiments/LightGBM_CORAL_MovieLens_20250710_155242/results.json

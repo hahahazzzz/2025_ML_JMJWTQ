@@ -1,0 +1,18 @@
+{
+    "data_quality_score": [
+        {
+            "value": 0
+        }
+    ],
+    "outlier_count": [
+        {
+            "value": 0
+        }
+    ],
+    "outlier_ratio": [
+        {
+            "value": 0
+        }
+    ],
+    "status": "failed"
+}

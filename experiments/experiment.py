@@ -3,48 +3,7 @@
 """
 实验管理模块
 
-该模块提供了电影推荐系统的实验管理功能，主要包括：
-1. 实验配置管理：自动保存和加载实验配置
-2. 结果记录：支持各种指标的记录和存储
-3. 数据保存：自动保存DataFrame、图表等实验产物
-4. 实验比较：支持多个实验之间的性能比较
-5. 可视化：自动生成实验结果的可视化图表
-6. 版本控制：基于时间戳的实验版本管理
-
-主要功能：
-- 自动创建实验目录和文件结构
-- 支持JSON格式的配置和结果存储
-- 提供丰富的可视化功能
-- 支持实验间的横向比较
-- 集成日志记录系统
-- 支持增量式结果更新
-
-使用方式：
-    from experiments.experiment import Experiment
-    
-    # 创建实验
-    exp = Experiment("LightGBM_Test", config)
-    
-    # 记录指标
-    exp.log_metric("rmse", 0.85)
-    exp.log_metric("mae", 0.67)
-    
-    # 保存结果
-    exp.save_results()
-    exp.save_dataframe(predictions_df, "predictions.csv")
-
-实验目录结构：
-    experiments/
-    ├── ExperimentName_YYYYMMDD_HHMMSS/
-    │   ├── config.json          # 实验配置
-    │   ├── results.json         # 实验结果
-    │   ├── predictions.csv      # 预测结果
-    │   ├── *.png               # 可视化图表
-    │   └── logs/               # 实验日志
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供实验配置管理、结果记录、数据保存和可视化功能
 """
 
 import os
@@ -62,30 +21,14 @@ class Experiment:
     """
     实验管理类
     
-    该类提供了完整的机器学习实验管理功能，包括配置管理、结果记录、
-    数据保存、可视化和实验比较等功能。每个实验都有唯一的ID和独立的目录。
-    
-    主要特性：
-    - 自动化的实验目录管理
-    - 配置和结果的JSON序列化
-    - 丰富的可视化功能
-    - 支持多实验比较
-    - 集成日志系统
-    - 类型安全的接口
+    提供实验配置管理、结果记录、数据保存和可视化功能
     
     Attributes:
-        name (str): 实验名称
-        config (Dict): 实验配置
-        timestamp (str): 实验创建时间戳
-        experiment_id (str): 唯一的实验标识符
-        experiment_dir (str): 实验目录路径
-        results (Dict): 实验结果字典
-    
-    Example:
-        >>> config = {"model": "LightGBM", "learning_rate": 0.1}
-        >>> exp = Experiment("MovieRec_Test", config)
-        >>> exp.log_metric("rmse", 0.85)
-        >>> exp.save_results()
+        name: 实验名称
+        config: 实验配置
+        experiment_id: 唯一的实验标识符
+        experiment_dir: 实验目录路径
+        results: 实验结果字典
     """
     
     def __init__(self, 
@@ -95,39 +38,10 @@ class Experiment:
         """
         初始化实验管理器
         
-        创建一个新的实验实例，自动生成唯一的实验ID，创建实验目录，
-        并保存实验配置。每个实验都有独立的目录结构用于存储所有相关文件。
-        
         Args:
-            name (str): 实验名称，用于标识实验类型或目的
-                       建议使用描述性名称，如"LightGBM_Baseline"、"DeepFM_Tuned"等
-            config (Dict[str, Any]): 实验配置字典，包含所有实验参数
-                                   如模型参数、数据参数、训练参数等
-            base_dir (str, optional): 实验结果保存的基础目录，默认为"experiments"
-        
-        Raises:
-            OSError: 当无法创建实验目录时抛出异常
-            TypeError: 当配置参数类型不正确时抛出异常
-            ValueError: 当实验名称为空时抛出异常
-        
-        Example:
-            >>> # 基本用法
-            >>> config = {
-            ...     "model_type": "LightGBM",
-            ...     "n_estimators": 100,
-            ...     "learning_rate": 0.1,
-            ...     "max_depth": 6
-            ... }
-            >>> exp = Experiment("LightGBM_Baseline", config)
-            >>> 
-            >>> # 自定义基础目录
-            >>> exp = Experiment("Test_Run", config, base_dir="my_experiments")
-        
-        Note:
-            - 实验ID格式为: {name}_{YYYYMMDD_HHMMSS}
-            - 实验目录会自动创建，包含必要的子目录
-            - 配置文件会立即保存为JSON格式
-            - 所有操作都会记录到日志中
+            name: 实验名称
+            config: 实验配置字典
+            base_dir: 实验结果保存的基础目录
         """
         # 参数验证
         if not isinstance(name, str) or not name.strip():

@@ -1,17 +1,12 @@
-# data_loader.py
 # 数据加载和特征工程模块
-# 
-# 本模块负责:
-# 1. 从CSV文件加载原始数据（评分、电影、标签）
-# 2. 创建多种类型的特征：协同过滤、内容特征、TF-IDF、用户画像、电影画像
-# 3. 特征合并和交叉特征生成
-# 4. 集成数据预处理和异常值处理功能
+# 提供数据加载、特征生成和预处理功能
 
 import pandas as pd
 import numpy as np
-from surprise import Dataset, Reader, SVD
+from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler, MultiLabelBinarizer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from scipy.sparse import csr_matrix
 from typing import Tuple, Optional
 from config import config
 from .data_preprocessing import preprocess_ratings_data
@@ -23,29 +18,12 @@ def load_data(enable_preprocessing: bool = True,
     """
     加载评分、电影、标签数据，并进行数据预处理
     
-    该函数执行以下步骤：
-    1. 从CSV文件加载原始数据
-    2. 添加时间相关特征（年份、月份、星期几）
-    3. 可选的数据预处理和异常值检测
-    4. 数据质量验证
-    
     Args:
-        enable_preprocessing: 是否启用数据预处理和异常值检测
+        enable_preprocessing: 是否启用数据预处理
         outlier_strategy: 异常值处理策略
-            - 'flag': 仅标记异常值，不删除
-            - 'remove': 删除检测到的异常值
-            - 'cap': 将异常值限制到合理范围
-            - 'transform': 使用稳健变换处理异常值
     
     Returns:
-        ratings: 评分数据DataFrame，包含时间特征和可选的异常值标记
-        movies: 电影数据DataFrame，包含电影ID、标题、类型信息
-        tags: 标签数据DataFrame，包含用户标签信息
-        preprocessing_report: 数据预处理报告（如果启用预处理）
-    
-    Raises:
-        FileNotFoundError: 当数据文件不存在时
-        ValueError: 当数据格式不正确时
+        ratings, movies, tags, preprocessing_report
     """
     logger.info("开始加载数据文件")
     
@@ -119,90 +97,88 @@ def load_data(enable_preprocessing: bool = True,
 
 def create_collaborative_filtering_features(ratings: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    使用SVD（奇异值分解）创建协同过滤特征
-    
-    该函数通过矩阵分解技术将用户-物品评分矩阵分解为低维的用户和物品隐因子，
-    同时提取用户和物品的偏置项，这些特征能够捕捉用户偏好和物品特性的潜在模式。
-    
-    算法流程：
-    1. 将评分数据转换为Surprise库格式
-    2. 使用SVD算法进行矩阵分解，学习用户和物品的隐因子表示
-    3. 提取用户隐因子、物品隐因子、用户偏置和物品偏置
-    4. 将内部ID映射回原始ID，并转换为DataFrame格式
+    使用TruncatedSVD创建协同过滤特征
     
     Args:
-        ratings: 评分数据DataFrame，必须包含['userId', 'movieId', 'rating']列
+        ratings: 评分数据DataFrame
     
     Returns:
-        user_f: 用户隐因子特征DataFrame，包含userId和user_f0到user_f{latent_dim-1}列
-               每行代表一个用户在隐空间中的表示向量
-        item_f: 电影隐因子特征DataFrame，包含movieId和item_f0到item_f{latent_dim-1}列
-               每行代表一个电影在隐空间中的表示向量
-        user_bias: 用户偏置DataFrame，包含userId和user_bias列
-                  反映用户的整体评分倾向（严格或宽松）
-        item_bias: 电影偏置DataFrame，包含movieId和item_bias列
-                  反映电影的整体质量水平（高分或低分倾向）
-    
-    Note:
-        - 隐因子维度由config.latent_dim控制
-        - 评分范围设置为0.5-5.0以匹配MovieLens数据集
-        - SVD能够处理稀疏评分矩阵并发现潜在的用户-物品关联模式
-        - 偏置项有助于捕捉用户和物品的全局特性
+        user_f: 用户隐因子特征
+        item_f: 电影隐因子特征  
+        user_bias: 用户偏置
+        item_bias: 电影偏置
     """
     logger.info(f"开始创建协同过滤特征，隐因子维度: {config.latent_dim}")
     
     try:
-        # 1. 准备Surprise数据格式
-        # Reader定义评分范围，确保数据正确解析
-        reader = Reader(rating_scale=(0.5, 5.0))
-        data_surp = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
-        trainset = data_surp.build_full_trainset()
+        # 创建用户-物品评分矩阵
+        logger.info("构建用户-物品评分矩阵")
         
-        logger.info(f"训练集统计: {trainset.n_users}个用户, {trainset.n_items}个物品, {trainset.n_ratings}条评分")
+        # 获取唯一的用户和物品ID
+        unique_users = sorted(ratings['userId'].unique())
+        unique_movies = sorted(ratings['movieId'].unique())
         
-        # 2. 训练SVD模型
-        # SVD通过梯度下降优化用户和物品隐因子以及偏置项
-        svd = SVD(n_factors=config.latent_dim, random_state=config.seed)
+        # 创建ID到索引的映射
+        user_to_idx = {user_id: idx for idx, user_id in enumerate(unique_users)}
+        movie_to_idx = {movie_id: idx for idx, movie_id in enumerate(unique_movies)}
         
-        logger.info("开始训练SVD模型...")
-        svd.fit(trainset)
-        logger.info("SVD模型训练完成")
-
-        # 3. 创建ID映射表
-        # Surprise内部使用连续整数ID，需要映射回原始用户和电影ID
-        u_map = {i: trainset.to_raw_uid(i) for i in trainset.all_users()}
-        i_map = {i: trainset.to_raw_iid(i) for i in trainset.all_items()}
+        # 构建评分矩阵的行、列、数据
+        rows = [user_to_idx[user_id] for user_id in ratings['userId']]
+        cols = [movie_to_idx[movie_id] for movie_id in ratings['movieId']]
+        data = ratings['rating'].values
         
-        logger.info("提取用户和物品隐因子...")
+        # 创建稀疏矩阵
+        rating_matrix = csr_matrix((data, (rows, cols)), 
+                                 shape=(len(unique_users), len(unique_movies)))
         
-        # 4. 提取用户隐因子特征
-        # svd.pu: 用户隐因子矩阵，形状为(n_users, n_factors)
+        logger.info(f"评分矩阵: {len(unique_users)}用户 x {len(unique_movies)}物品, {len(ratings)}评分")
+        
+        # 计算用户和物品的平均评分（偏置）
+        user_means = np.array(rating_matrix.mean(axis=1)).flatten()
+        item_means = np.array(rating_matrix.mean(axis=0)).flatten()
+        global_mean = ratings['rating'].mean()
+        
+        # 中心化评分矩阵
+        rating_matrix_centered = rating_matrix.copy().astype(np.float32)
+        for i in range(len(unique_users)):
+            user_ratings = rating_matrix_centered.getrow(i)
+            if user_ratings.nnz > 0:
+                user_ratings.data -= user_means[i]
+        
+        # 使用TruncatedSVD进行矩阵分解
+        logger.info("执行SVD分解")
+        svd = TruncatedSVD(n_components=config.latent_dim, random_state=config.seed)
+        user_factors = svd.fit_transform(rating_matrix_centered)
+        item_factors = svd.components_.T
+        
+        logger.info("SVD分解完成")
+        
+        # 创建用户隐因子特征DataFrame
         user_f = pd.DataFrame(
-            svd.pu, 
-            index=[u_map[i] for i in range(len(svd.pu))],
+            user_factors,
             columns=[f"user_f{i}" for i in range(config.latent_dim)]
-        ).reset_index().rename(columns={'index': 'userId'})
+        )
+        user_f['userId'] = unique_users
+        user_f = user_f[['userId'] + [f"user_f{i}" for i in range(config.latent_dim)]]
         
-        # 5. 提取物品隐因子特征
-        # svd.qi: 物品隐因子矩阵，形状为(n_items, n_factors)
+        # 创建物品隐因子特征DataFrame
         item_f = pd.DataFrame(
-            svd.qi, 
-            index=[i_map[i] for i in range(len(svd.qi))],
+            item_factors,
             columns=[f"item_f{i}" for i in range(config.latent_dim)]
-        ).reset_index().rename(columns={'index': 'movieId'})
-
-        # 6. 提取用户偏置
-        # svd.bu: 用户偏置向量，反映用户的评分倾向
+        )
+        item_f['movieId'] = unique_movies
+        item_f = item_f[['movieId'] + [f"item_f{i}" for i in range(config.latent_dim)]]
+        
+        # 创建用户偏置DataFrame
         user_bias = pd.DataFrame({
-            'userId': [u_map[i] for i in range(len(svd.bu))], 
-            'user_bias': svd.bu
+            'userId': unique_users,
+            'user_bias': user_means - global_mean
         })
         
-        # 7. 提取物品偏置
-        # svd.bi: 物品偏置向量，反映物品的质量水平
+        # 创建物品偏置DataFrame
         item_bias = pd.DataFrame({
-            'movieId': [i_map[i] for i in range(len(svd.bi))], 
-            'item_bias': svd.bi
+            'movieId': unique_movies,
+            'item_bias': item_means - global_mean
         })
         
         logger.info(f"协同过滤特征创建完成:")
@@ -222,32 +198,12 @@ def create_content_features(movies: pd.DataFrame) -> Tuple[pd.DataFrame, MultiLa
     """
     创建电影内容特征，包括年份和类型特征
     
-    该函数从电影标题中提取年份信息，并将电影类型转换为One-Hot编码特征。
-    这些内容特征能够帮助模型理解电影的基本属性和类型偏好。
-    
-    处理流程：
-    1. 从电影标题中提取发行年份
-    2. 对年份进行标准化处理
-    3. 将电影类型字符串分割并进行One-Hot编码
-    4. 合并所有内容特征
-    
     Args:
-        movies: 电影数据DataFrame，必须包含['movieId', 'title', 'genres']列
-               title格式应为"Movie Title (Year)"
-               genres格式应为"Genre1|Genre2|Genre3"
+        movies: 电影数据DataFrame
     
     Returns:
-        movies_feats: 内容特征DataFrame，包含：
-                     - movieId: 电影ID
-                     - year: 标准化后的发行年份
-                     - 各类型的One-Hot编码特征
-        mlb: 多标签二值化器，用于类型编码的转换器对象
-    
-    Note:
-        - 缺失年份使用均值填充
-        - 年份标准化有助于模型训练稳定性
-        - One-Hot编码能够捕捉不同类型的偏好模式
-        - 返回的mlb可用于新数据的类型编码
+        movies_feats: 内容特征DataFrame
+        mlb: 多标签二值化器
     """
     logger.info("开始创建电影内容特征")
     

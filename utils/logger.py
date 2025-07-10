@@ -3,25 +3,7 @@
 """
 日志记录工具模块
 
-该模块提供了电影推荐系统的统一日志记录功能，主要特点：
-1. 支持同时输出到文件和控制台
-2. 自动创建带时间戳的日志文件
-3. 提供多种日志级别（DEBUG, INFO, WARNING, ERROR）
-4. 统一的日志格式和配置
-5. 线程安全的日志记录
-
-使用方式：
-    from utils.logger import logger
-    logger.info("这是一条信息日志")
-    logger.error("这是一条错误日志")
-
-日志文件命名规则：
-    run_YYYYMMDD_HHMMSS.log
-    例如：run_20241201_143052.log
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供统一的日志记录功能，支持文件和控制台输出
 """
 
 import logging
@@ -34,27 +16,14 @@ from pathlib import Path
 
 class Logger:
     """
-    电影推荐系统专用日志记录器
+    日志记录器
     
-    该类封装了Python标准库的logging模块，提供了更便捷的日志记录接口。
-    支持同时向文件和控制台输出日志，并自动管理日志文件的创建和格式化。
-    
-    主要功能：
-    - 自动创建日志目录和文件
-    - 支持多种日志级别
-    - 统一的日志格式
-    - 线程安全
-    - 支持日志轮转（可扩展）
+    支持同时向文件和控制台输出日志
     
     Attributes:
-        logger (logging.Logger): Python标准日志记录器实例
-        log_dir (str): 日志文件保存目录
-        log_file (str): 当前日志文件路径
-    
-    Example:
-        >>> logger = Logger(log_dir="logs", log_level=logging.INFO)
-        >>> logger.info("系统启动")
-        >>> logger.error("发生错误")
+        logger: Python标准日志记录器实例
+        log_dir: 日志文件保存目录
+        log_file: 当前日志文件路径
     """
     
     def __init__(self, 
@@ -66,32 +35,12 @@ class Logger:
         """
         初始化日志记录器
         
-        创建一个配置完整的日志记录器，包括文件处理器和控制台处理器。
-        日志文件会自动以当前时间戳命名，避免文件冲突。
-        
         Args:
-            log_dir (str, optional): 日志文件保存目录，默认为"logs"
-            log_level (int, optional): 日志级别，默认为logging.INFO
-                                     可选值：logging.DEBUG, logging.INFO, 
-                                            logging.WARNING, logging.ERROR, logging.CRITICAL
-            logger_name (str, optional): 日志记录器名称，默认为"MovieRecommender"
-            enable_console (bool, optional): 是否启用控制台输出，默认为True
-            enable_file (bool, optional): 是否启用文件输出，默认为True
-        
-        Raises:
-            OSError: 当无法创建日志目录时抛出异常
-            PermissionError: 当没有写入权限时抛出异常
-        
-        Example:
-            >>> # 基本用法
-            >>> logger = Logger()
-            >>> 
-            >>> # 自定义配置
-            >>> logger = Logger(
-            ...     log_dir="custom_logs",
-            ...     log_level=logging.DEBUG,
-            ...     logger_name="MyApp"
-            ... )
+            log_dir: 日志文件保存目录
+            log_level: 日志级别
+            logger_name: 日志记录器名称
+            enable_console: 是否启用控制台输出
+            enable_file: 是否启用文件输出
         """
         # 参数验证
         if not isinstance(log_dir, str) or not log_dir.strip():

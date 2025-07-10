@@ -3,86 +3,7 @@
 """
 误差分析可视化模块
 
-该模块专门用于电影推荐系统的预测误差分析和可视化，提供全面的
-误差分析工具，帮助理解模型性能、识别预测偏差和优化方向。
-
-主要功能：
-1. 误差分布分析：
-   - 预测误差的整体分布特征
-   - 误差的统计特性（均值、方差、偏度等）
-   - 异常误差的识别和分析
-
-2. 分层误差分析：
-   - 按真实评分等级的误差分析
-   - 按用户群体的误差分析
-   - 按电影类型的误差分析
-
-3. 时间序列误差分析：
-   - 按评分时间的误差变化趋势
-   - 季节性误差模式分析
-   - 长期误差趋势分析
-
-4. 相关性误差分析：
-   - 误差与电影热度的关系
-   - 误差与用户活跃度的关系
-   - 误差与特征重要性的关系
-
-5. 混淆矩阵分析：
-   - 预测评分与真实评分的混淆矩阵
-   - 分类准确性的热力图展示
-   - 预测偏差模式的可视化
-
-可视化特性：
-- 专业的统计图表样式
-- 交互式图表支持
-- 多维度误差分析
-- 自动异常值检测和标注
-- 详细的统计信息展示
-- 高质量图片输出
-
-使用方式：
-    from visualization.error_analysis import (
-        plot_error_distribution,
-        plot_mean_error_per_rating,
-        plot_rmse_per_rating,
-        plot_confusion_heatmap
-    )
-    
-    # 绘制误差分布
-    plot_error_distribution(predictions_df)
-    
-    # 分析不同评分等级的误差
-    plot_mean_error_per_rating(predictions_df)
-    
-    # 绘制混淆矩阵
-    plot_confusion_heatmap(predictions_df)
-
-输出文件：
-    所有误差分析图表自动保存到配置指定的输出目录：
-    - prediction_error_hist.png: 预测误差分布直方图
-    - mean_error_per_rating.png: 按评分等级的平均误差
-    - rmse_per_rating_level.png: 按评分等级的RMSE
-    - confusion_heatmap.png: 预测混淆矩阵热力图
-    - user_error_distribution.png: 用户误差分布
-    - error_vs_popularity_line.png: 误差与热度关系
-    - error_by_rating_year.png: 按年份的误差分析
-
-性能优化：
-- 大数据集的分批处理
-- 内存优化的数据处理
-- 并行计算支持
-- 缓存机制
-
-依赖库：
-    - matplotlib: 基础绘图
-    - seaborn: 统计图表
-    - pandas: 数据处理
-    - numpy: 数值计算
-    - sklearn: 机器学习指标
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供预测误差分析和可视化工具，包括误差分布、分层分析、混淆矩阵等
 """
 
 import os
@@ -114,39 +35,16 @@ def plot_error_distribution(output_df: pd.DataFrame,
     """
     绘制预测误差分布直方图
     
-    通过直方图和核密度估计展示预测误差的分布特征，包括误差的
-    中心趋势、离散程度、偏度和峰度等统计特性。有助于识别模型
-    的系统性偏差和预测质量。
-    
     Args:
-        output_df (pd.DataFrame): 包含预测误差的DataFrame
-                                必须包含'error'列或'true_rating'和'pred_rating'列
-        save_path (Optional[str]): 图片保存路径，如果为None则使用默认路径
-        figsize (Tuple[int, int]): 图表尺寸，默认为(12, 8)
-        bins (int): 直方图的箱数，默认为30
-        show_stats (bool): 是否显示统计信息，默认为True
-        show_outliers (bool): 是否标注异常值，默认为True
+        output_df: 包含预测误差的DataFrame
+        save_path: 图片保存路径
+        figsize: 图表尺寸
+        bins: 直方图的箱数
+        show_stats: 是否显示统计信息
+        show_outliers: 是否标注异常值
     
     Returns:
-        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None
-    
-    Raises:
-        ValueError: 当DataFrame缺少必要列时抛出异常
-        TypeError: 当参数类型不正确时抛出异常
-    
-    Example:
-        >>> predictions_df = pd.DataFrame({
-        ...     'true_rating': [1, 2, 3, 4, 5],
-        ...     'pred_rating': [1.2, 2.1, 2.9, 4.1, 4.8],
-        ...     'error': [0.2, 0.1, -0.1, 0.1, -0.2]
-        ... })
-        >>> fig = plot_error_distribution(predictions_df)
-    
-    Note:
-        - 误差定义为：预测值 - 真实值
-        - 正误差表示高估，负误差表示低估
-        - 理想情况下误差应该围绕0正态分布
-        - 异常值通过IQR方法自动检测
+        matplotlib图表对象
     """
     # 参数验证
     if not isinstance(output_df, pd.DataFrame):

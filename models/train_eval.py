@@ -3,21 +3,7 @@
 """
 模型训练和评估模块
 
-该模块实现了基于LightGBM的序数分类（Ordinal Classification）模型的训练和预测功能。
-主要特点：
-1. 使用多个二分类器实现序数分类
-2. 支持训练进度可视化
-3. 提供完整的训练和预测流程
-4. 针对电影评分预测任务优化
-
-序数分类方法：
-- 将K类序数分类问题转换为K-1个二分类问题
-- 每个二分类器预测"评分是否≥某个阈值"
-- 最终通过统计超过阈值的数量得到预测类别
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供基于LightGBM的序数分类模型训练和预测功能
 """
 
 import time
@@ -35,18 +21,6 @@ logger = logging.getLogger(__name__)
 class ProgressBarCallback:
     """
     LightGBM训练进度条回调类
-    
-    该类提供了训练过程中的可视化进度条，帮助用户了解训练进度。
-    使用tqdm库实现美观的进度条显示。
-    
-    Attributes:
-        total (int): 总的训练迭代次数
-        pbar (tqdm): 进度条对象
-    
-    Example:
-        >>> callback = ProgressBarCallback(total=1000)
-        >>> # 在LightGBM的fit方法中使用
-        >>> model.fit(X, y, callbacks=[callback])
     """
     
     def __init__(self, total: int, desc: str = "训练进度"):
@@ -54,11 +28,8 @@ class ProgressBarCallback:
         初始化进度条回调
         
         Args:
-            total (int): 总的训练迭代次数
-            desc (str, optional): 进度条描述文本，默认为"训练进度"
-        
-        Raises:
-            ValueError: 当total小于等于0时抛出异常
+            total: 总的训练迭代次数
+            desc: 进度条描述文本
         """
         if total <= 0:
             raise ValueError(f"总迭代次数必须大于0，当前值: {total}")
@@ -75,9 +46,6 @@ class ProgressBarCallback:
     def __call__(self, env):
         """
         回调函数，在每次迭代时被调用
-        
-        Args:
-            env: LightGBM的环境对象，包含当前迭代信息
         """
         # 更新进度条
         if env.iteration < self.total:
@@ -101,41 +69,19 @@ def train_models(X_train: np.ndarray,
     """
     训练多个LightGBM二分类模型以实现序数分类
     
-    该函数是整个序数分类系统的核心，它将K类序数分类问题分解为K-1个
-    二分类问题，每个二分类器负责预测"评分是否≥某个阈值"。
-    
-    算法流程:
-    1. 将原始标签转换为序数目标矩阵
-    2. 为每个阈值训练一个二分类器
-    3. 使用进度条显示训练进度
-    4. 返回训练好的模型列表
-    
     Args:
-        X_train (np.ndarray): 训练集特征矩阵，形状为(n_samples, n_features)
-        y_train_raw (np.ndarray): 训练集原始评分标签，形状为(n_samples,)
-                                 标签值应在[0, num_classes-1]范围内
-        num_classes (int, optional): 总类别数量，默认为10
-                                   对应评分0.5, 1.0, 1.5, ..., 5.0
-        n_estimators (int, optional): 每个模型的树的数量，默认为1000
-        learning_rate (float, optional): 学习率，默认为0.05
-        num_leaves (int, optional): 每棵树的叶子节点数，默认为63
-        seed (int, optional): 随机种子，确保结果可重复，默认为42
-        categorical_features (List[str], optional): 类别特征列表，默认为时间特征
-        verbose (bool, optional): 是否显示详细训练信息，默认为True
+        X_train: 训练集特征矩阵
+        y_train_raw: 训练集原始评分标签
+        num_classes: 总类别数量
+        n_estimators: 每个模型的树的数量
+        learning_rate: 学习率
+        num_leaves: 每棵树的叶子节点数
+        seed: 随机种子
+        categorical_features: 类别特征列表
+        verbose: 是否显示详细训练信息
     
     Returns:
-        List[LGBMClassifier]: 训练好的模型列表，长度为num_classes-1
-                             每个模型对应一个二分类任务
-    
-    Raises:
-        ValueError: 当输入参数不合法时抛出异常
-        RuntimeError: 当训练过程中出现错误时抛出异常
-    
-    Example:
-        >>> X_train = np.random.rand(1000, 50)
-        >>> y_train = np.random.randint(0, 10, 1000)
-        >>> models = train_models(X_train, y_train, num_classes=10)
-        >>> print(f"训练了{len(models)}个模型")
+        训练好的模型列表
     """
     # ==================== 参数验证 ====================
     if not isinstance(X_train, np.ndarray) or not isinstance(y_train_raw, np.ndarray):
@@ -179,12 +125,6 @@ def train_models(X_train: np.ndarray,
                 print(f"正样本比例: {y_train_ordinal[:, k].mean():.3f}")
                 print(f"{'='*60}")
             
-            # 创建进度条回调
-            progress_callback = ProgressBarCallback(
-                total=n_estimators, 
-                desc=f"模型{k+1}/{num_classes-1}"
-            )
-            
             # 创建并配置模型
             model_k = LGBMClassifier(
                 objective='binary',           # 二分类任务
@@ -193,7 +133,7 @@ def train_models(X_train: np.ndarray,
                 learning_rate=learning_rate, # 学习率
                 num_leaves=num_leaves,       # 叶子节点数
                 verbosity=-1,               # 静默模式
-                n_jobs=-1,                  # 使用所有CPU核心
+                n_jobs=1,                   # 使用单线程避免段错误
                 importance_type='gain'       # 特征重要性计算方式
             )
             
@@ -203,8 +143,7 @@ def train_models(X_train: np.ndarray,
             model_k.fit(
                 X_train, 
                 y_train_ordinal[:, k],
-                categorical_feature=categorical_features,
-                callbacks=[progress_callback] if verbose else None
+                categorical_feature=categorical_features
             )
             
             models.append(model_k)

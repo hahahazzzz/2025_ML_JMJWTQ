@@ -3,28 +3,7 @@
 """
 评估指标计算模块
 
-该模块提供了电影推荐系统的各种评估指标计算功能，主要包括：
-1. 回归指标：RMSE、MAE、MAPE等
-2. 分类指标：准确率、精确率、召回率、F1分数等
-3. 排序指标：NDCG、MAP、MRR等
-4. 分组分析：按用户、按电影、按评分等级的误差分析
-5. 统计分析：误差分布、预测质量评估等
-
-主要功能：
-- 支持多种评估指标的计算
-- 提供详细的分组分析功能
-- 支持异常值检测和处理
-- 提供可视化友好的结果格式
-- 支持批量评估和增量评估
-
-使用方式：
-    from utils.metrics import compute_rmse, evaluate_predictions
-    rmse = compute_rmse(true_ratings, pred_ratings)
-    results = evaluate_predictions(df)
-
-作者: 电影推荐系统开发团队
-创建时间: 2024
-最后修改: 2024
+提供各种评估指标计算功能，包括回归指标、分类指标和分组分析
 """
 
 import numpy as np
@@ -47,33 +26,12 @@ def compute_rmse(true_ratings: Union[np.ndarray, pd.Series, List],
     """
     计算均方根误差(Root Mean Square Error, RMSE)
     
-    RMSE是回归问题中最常用的评估指标之一，它衡量预测值与真实值之间的平均偏差。
-    RMSE对大误差更敏感，因为它对误差进行了平方处理。
-    
-    公式: RMSE = sqrt(mean((y_true - y_pred)^2))
-    
     Args:
-        true_ratings (Union[np.ndarray, pd.Series, List]): 真实评分数组
-        pred_ratings (Union[np.ndarray, pd.Series, List]): 预测评分数组
+        true_ratings: 真实评分数组
+        pred_ratings: 预测评分数组
     
     Returns:
-        float: RMSE值，值越小表示预测越准确
-    
-    Raises:
-        ValueError: 当输入数组长度不匹配或包含无效值时抛出异常
-        TypeError: 当输入类型不正确时抛出异常
-    
-    Example:
-        >>> true_ratings = [4.0, 3.5, 5.0, 2.0, 4.5]
-        >>> pred_ratings = [3.8, 3.2, 4.9, 2.3, 4.2]
-        >>> rmse = compute_rmse(true_ratings, pred_ratings)
-        >>> print(f"RMSE: {rmse:.4f}")
-        RMSE: 0.2449
-    
-    Note:
-        - RMSE的单位与原始数据相同
-        - RMSE值域为[0, +∞)，0表示完美预测
-        - 对异常值敏感，一个很大的误差会显著影响RMSE
+        RMSE值，值越小表示预测越准确
     """
     try:
         # 参数验证
@@ -112,21 +70,12 @@ def compute_mae(true_ratings: Union[np.ndarray, pd.Series, List],
     """
     计算平均绝对误差(Mean Absolute Error, MAE)
     
-    MAE是另一个常用的回归评估指标，它计算预测值与真实值之间绝对误差的平均值。
-    与RMSE相比，MAE对异常值不那么敏感。
-    
-    公式: MAE = mean(|y_true - y_pred|)
-    
     Args:
-        true_ratings (Union[np.ndarray, pd.Series, List]): 真实评分数组
-        pred_ratings (Union[np.ndarray, pd.Series, List]): 预测评分数组
+        true_ratings: 真实评分数组
+        pred_ratings: 预测评分数组
     
     Returns:
-        float: MAE值，值越小表示预测越准确
-    
-    Example:
-        >>> mae = compute_mae([4.0, 3.5, 5.0], [3.8, 3.2, 4.9])
-        >>> print(f"MAE: {mae:.4f}")
+        MAE值，值越小表示预测越准确
     """
     try:
         true_ratings = np.asarray(true_ratings, dtype=float)
@@ -157,19 +106,12 @@ def compute_mape(true_ratings: Union[np.ndarray, pd.Series, List],
     """
     计算平均绝对百分比误差(Mean Absolute Percentage Error, MAPE)
     
-    MAPE表示预测误差相对于真实值的百分比，便于理解预测的相对准确性。
-    
-    公式: MAPE = mean(|y_true - y_pred| / |y_true|) * 100
-    
     Args:
         true_ratings: 真实评分数组
         pred_ratings: 预测评分数组
     
     Returns:
-        float: MAPE值（百分比），值越小表示预测越准确
-    
-    Note:
-        当真实值为0时，该点会被跳过以避免除零错误
+        MAPE值（百分比），值越小表示预测越准确
     """
     try:
         true_ratings = np.asarray(true_ratings, dtype=float)

@@ -1,0 +1,99 @@
+{
+    "data_quality_score": [
+        {
+            "value": 0
+        }
+    ],
+    "outlier_count": [
+        {
+            "value": 0
+        }
+    ],
+    "outlier_ratio": [
+        {
+            "value": 0
+        }
+    ],
+    "RMSE": [
+        {
+            "value": 0.8165802340790063
+        }
+    ],
+    "train_size": [
+        {
+            "value": 97786
+        }
+    ],
+    "val_size": [
+        {
+            "value": 3050
+        }
+    ],
+    "feature_count": [
+        {
+            "value": 1141
+        }
+    ],
+    "users_with_val": [
+        {
+            "value": 610
+        }
+    ],
+    "users_without_val": [
+        {
+            "value": 0
+        }
+    ],
+    "execution_time": 301.3502736091614,
+    "rmse": 0.8165802340790063,
+    "data_stats": {
+        "total_ratings": 100836,
+        "total_users": 610,
+        "total_movies": 9724,
+        "train_size": 97786,
+        "val_size": 3050
+    },
+    "model_params": {
+        "latent_dim": 20,
+        "tfidf_dim": 100,
+        "n_estimators": 1000,
+        "learning_rate": 0.05,
+        "num_leaves": 63,
+        "num_classes": 10
+    },
+    "feature_stats": {
+        "total_features": 1141,
+        "genre_features": 20,
+        "user_preference_features": 951,
+        "collaborative_features": 60,
+        "tag_features": 100
+    },
+    "preprocessing": {
+        "total_records": 100836,
+        "total_outliers": 99928,
+        "total_ratio": 99.09952794636835,
+        "by_type": {
+            "is_basic_outlier": {
+                "count": 0,
+                "ratio": 0.0
+            },
+            "is_range_outlier": {
+                "count": 0,
+                "ratio": 0.0
+            },
+            "is_behavior_outlier": {
+                "count": 20489,
+                "ratio": 20.32
+            },
+            "is_temporal_outlier": {
+                "count": 96070,
+                "ratio": 95.27
+            },
+            "is_multivariate_outlier": {
+                "count": 40258,
+                "ratio": 39.92
+            }
+        }
+    },
+    "status": "completed"
+}
