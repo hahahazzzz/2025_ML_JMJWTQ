@@ -7,10 +7,10 @@
 # 本项目组员：金明俊，王泰乾
 # 全部成员：郑睿韬，柳彤，金明俊，王泰乾
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![LightGBM](https://img.shields.io/badge/LightGBM-Latest-green.svg)](https://lightgbm.readthedocs.io/)
+[![Python](https://img.shields.io/badge/Python-3.13.2-blue.svg)](https://www.python.org/)
+[![LightGBM](https://img.shields.io/badge/LightGBM-3.3.2-green.svg)](https://lightgbm.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status](https://img.shields.io/badge/Status-Development-orange.svg)]()
+[![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
 
 ## 目录
 
@@ -22,9 +22,11 @@
 - [快速开始](#快速开始)
 - [详细使用说明](#详细使用说明)
 - [配置说明](#配置说明)
-- [实验管理](#实验管理)
+- [结果输出](#结果输出)
 - [性能评估](#性能评估)
 - [可视化分析](#可视化分析)
+- [异常值检测](#异常值检测)
+- [项目优化](#项目优化)
 
 ## 项目概述
 
@@ -42,19 +44,20 @@
 - **算法先进**: 采用LightGBM序数分类技术，保持评分的顺序特性
 - **特征丰富**: 融合协同过滤、内容分析、文本挖掘等多种特征
 - **可视化完善**: 提供多种图表进行数据分析和结果展示
-- **实验管理**: 完整的实验记录和追踪系统
+- **结果管理**: 完整的结果保存和日志记录系统
 - **模块化设计**: 易于扩展和维护的代码架构
 
 ## 核心特性
 
 ### 特征工程
 
-- **协同过滤特征**: 通过SVD矩阵分解，挖掘用户和电影的关联模式
-- **内容特征**: 从电影的类型、年份等信息中提取结构化特征
-- **文本特征**: 利用TF-IDF技术分析用户标签偏好
-- **用户画像**: 分析用户的评分习惯和偏好倾向
+- **协同过滤特征**: 通过SVD矩阵分解，挖掘用户和电影的关联模式（20维隐因子）
+- **内容特征**: 从电影的类型、年份等信息中提取结构化特征（20个电影类型）
+- **文本特征**: 利用TF-IDF技术分析用户标签偏好（100维TF-IDF特征）
+- **用户画像**: 分析用户的评分习惯和偏好倾向（951个用户偏好特征）
 - **电影画像**: 评估电影的质量指标和受欢迎程度
-- **交叉特征**: 捕捉用户与电影的互动模式
+- **交叉特征**: 捕捉用户与电影的互动模式（60个协同过滤特征）
+- **异常值检测**: 多维度异常值识别和标记，提升数据质量
 
 ### 核心算法
 
@@ -87,7 +90,7 @@
 - **模型层**: 基于LightGBM的CORAL风格序数分类器
 - **评估层**: 多指标评估和误差分析
 - **可视化层**: 预测效果、特征分析等图表生成
-- **应用层**: 实验管理、配置管理和日志系统
+- **应用层**: 配置管理和日志系统
 
 ## 项目结构
 
@@ -97,11 +100,12 @@
 ├── requirements.txt             # Python依赖包列表
 ├── config.py                    # 全局配置管理
 ├── main.py                      # 主程序入口
+├── .gitattributes               # Git属性配置
 │
 ├── data/                        # 数据处理模块
 │   ├── __init__.py              # 模块初始化
 │   ├── data_loader.py           # 数据加载和特征工程
-│   ├── data_preprocessing.py    # 数据预处理和清洗
+│   ├── data_preprocessing.py    # 数据预处理和异常值检测
 │   ├── movies.csv               # 电影信息数据
 │   ├── ratings.csv              # 用户评分数据
 │   └── tags.csv                 # 用户标签数据
@@ -120,25 +124,13 @@
 │   ├── __init__.py              # 模块初始化
 │   ├── basic_plots.py           # 基础图表
 │   ├── error_analysis.py        # 误差分析图表
-│   └── feature_plots.py         # 特征分析图表
+│   ├── feature_plots.py         # 特征分析图表
+│   ├── font_config.py           # 中文字体配置
+│   └── font_fix.py              # 字体修复工具
 │
-├── experiments/                 # 实验管理模块
-│   ├── __init__.py              # 模块初始化
-│   ├── experiment.py            # 实验管理类
-│   └── [实验记录目录]/           # 输出：各次实验的结果
-│       ├── config.json          # 实验配置
-│       ├── results.json         # 实验结果
-│       ├── predictions.csv      # 预测结果
-│       ├── plots/               # 可视化图表
-│       ├── models/              # 训练模型
-│       └── logs/                # 实验日志
-│
-├── output/                      # 输出：输出目录
-│   ├── predictions.csv          # 最新预测结果
-│   └── *.png                    # 生成的图表文件
-│
-└── logs/                        # 输出：日志目录
-    └── *.log                    # 运行日志文件
+├── fonts/                       # 字体文件目录
+├── output/                      # 输出目录
+└── logs/                        # 日志目录
 ```
 
 ### 核心模块说明
@@ -150,43 +142,37 @@
 | **models** | 模型训练、预测、评估 | `train_eval.py`, `model_utils.py` |
 | **utils** | 工具函数、日志、评估指标 | `logger.py`, `metrics.py` |
 | **visualization** | 可视化分析和图表生成 | `basic_plots.py`, `error_analysis.py`, `feature_plots.py` |
-| **experiments** | 实验管理和结果追踪 | `experiment.py` |
+
 
 ## 安装指南
 
 ### 环境要求
 
-- **Python**: 3.8或更高版本
+- **Python**: 3.13.2（推荐）或3.8+
 - **操作系统**: Windows 10+、macOS 10.14+或Ubuntu 18.04+
-- **内存**: 至少4GB RAM
+- **内存**: 至少4GB RAM（推荐8GB+）
 - **存储空间**: 预留2GB可用空间
 
 ### 依赖包
 
 #### 核心依赖
 ```
-pandas>=1.3.0          # 数据处理
-numpy>=1.21.0           # 数值计算
-scipy>=1.7.0            # 科学计算
-scikit-learn>=1.0.0     # 机器学习工具
-lightgbm>=3.2.0         # 梯度提升模型
-torch>=1.9.0            # 深度学习框架
+pandas==1.3.5           # 数据处理
+numpy==1.21.6           # 数值计算
+scipy==1.7.3            # 科学计算
+scikit-learn==1.0.2     # 机器学习工具
+lightgbm==3.3.2         # 梯度提升模型
 ```
 
 #### 可视化依赖
 ```
-matplotlib>=3.4.0       # 基础绘图
-seaborn>=0.11.0         # 统计图表
-plotly>=5.0.0           # 交互式图表
+matplotlib==3.5.1       # 基础绘图
+seaborn==0.11.2         # 统计图表
 ```
 
 #### 工具依赖
 ```
-nltk>=3.6.0             # 自然语言处理
-tqdm>=4.62.0            # 进度条
-joblib>=1.0.0           # 并行计算
-jupyter>=1.0.0          # 交互式开发
-ipython>=7.25.0         # 增强交互式Python
+tqdm==4.62.3            # 进度条
 ```
 
 #### 数据集结构
@@ -214,47 +200,16 @@ ls output/  # 浏览生成的预测文件和可视化图表
 
 ### 输出结果
 
-程序运行完成后的输出内容：
-
-- **predictions.csv**: 预测结果，包含每个用户对每部电影的评分预测
-- **可视化图表**: 多种.png格式的分析图表
-- **实验记录**: 在`experiments/`目录下保存的完整实验记录
-
-### 可视化图表
-
-系统自动生成的分析图表：
-
-1. **预测效果**
-   - `boxplot_true_vs_pred.png`: 真实评分与预测评分对比
-   - `predicted_rating_hist.png`: 预测评分分布
-
-2. **误差分析**
-   - `prediction_error_hist.png`: 预测误差分布
-   - `mean_error_per_rating.png`: 不同评分等级的平均误差
-   - `confusion_heatmap.png`: 预测准确性混淆矩阵
-
-3. **特征分析**
-   - `top20_feature_importance.png`: 最重要的20个特征
-   - `feature_correlation_heatmap.png`: 特征相关性热力图
+程序运行完成后会在`output/`目录生成：
+- **predictions.csv**: 详细预测结果
+- **可视化图表**: 多种分析图表(.png格式)
+- **运行日志**: 保存在`logs/`目录，按时间戳命名
 
 ## 详细使用说明
 
 ### 配置管理
 
-系统提供灵活的配置管理，所有设置都集中在`config.py`文件中：
-
-```python
-from config import config
-
-# 查看当前配置
-print(f"模型名称: {config.model_name}")
-print(f"数据路径: {config.base_dir}")
-print(f"隐因子维度: {config.latent_dim}")
-
-# 调整参数
-config.n_estimators = 500      # 增加树的数量提升精度
-config.learning_rate = 0.1     # 调整学习率
-```
+系统提供灵活的配置管理，所有设置都集中在`config.py`文件中。主要配置参数详见[配置说明](#配置说明)章节。
 
 ### 数据处理流程
 
@@ -408,36 +363,9 @@ plot_top20_feature_importance(models, X_train)
 plot_feature_correlation(X_train, y_train)
 ```
 
-### 实验管理
 
-#### 1. 创建实验
 
-```python
-from experiments.experiment import Experiment
 
-# 创建实验
-exp = Experiment("LightGBM_Baseline", config.__dict__)
-
-# 记录指标
-exp.log_metric("rmse", rmse)
-exp.log_metric("mae", mae)
-exp.log_metric("accuracy", accuracy)
-
-# 保存结果
-exp.save_results()
-exp.save_dataframe(predictions_df, "predictions.csv")
-```
-
-#### 2. 实验比较
-
-```python
-# 加载历史实验
-exp1 = Experiment.load_experiment("experiments/LightGBM_Baseline_20241201_120000")
-exp2 = Experiment.load_experiment("experiments/LightGBM_Tuned_20241201_130000")
-
-# 比较实验
-comparison_fig = exp1.compare_experiments([exp2], "rmse")
-```
 
 ## 配置说明
 
@@ -457,16 +385,7 @@ comparison_fig = exp1.compare_experiments([exp2], "rmse")
 | `learning_rate` | float | 0.05 | 学习率 |
 | `num_leaves` | int | 63 | 每棵树的叶子节点数 |
 
-#### 配置示例
-```python
-from config import Config
 
-# 查看和修改配置
-config = Config()
-config.n_estimators = 500      # 调整树的数量
-config.learning_rate = 0.1     # 调整学习率
-config.latent_dim = 30         # 调整隐因子维度
-```
 
 ### 性能调优指南
 
@@ -492,92 +411,70 @@ config.learning_rate = 0.1         # 更高学习率
 
 ### 自定义配置
 
-#### 创建自定义配置类
+#### 自定义配置
+
+可以通过继承`Config`类或设置环境变量来自定义配置参数。详细示例请参考项目代码中的配置文件。
+
+
+
+## 可视化分析
+
+### 模块功能
+
+可视化模块提供全面的数据分析和结果展示功能：
+
+- **预测效果**: 箱线图对比、评分分布直方图
+- **误差分析**: 误差分布、混淆矩阵、用户误差分析
+- **特征分析**: 特征重要性排序、相关性热力图
+- **中文支持**: 自动检测和配置中文字体
+
+### 使用示例
 
 ```python
-from config import Config
+from visualization import *
 
-class CustomConfig(Config):
-    def __init__(self):
-        super().__init__()
-        # 自定义参数
-        self.n_estimators = 500
-        self.learning_rate = 0.1
-        self.latent_dim = 50
-        
-        # 自定义数据路径
-        self.base_dir = "/custom/data/path"
-        
-        # 验证配置
-        self.validate_config()
+# 准备预测结果DataFrame
+output_df = pd.DataFrame({
+    'true_rating': y_true,
+    'pred_rating': y_pred,
+    'error': y_pred - y_true
+})
 
-# 使用自定义配置
-custom_config = CustomConfig()
-```
-
-#### 环境变量配置
-
-```bash
-# 设置环境变量
-export MOVIE_DATA_DIR="/path/to/data"
-export MOVIE_OUTPUT_DIR="/path/to/output"
-export MOVIE_N_ESTIMATORS=500
-```
-
-```python
-# 在代码中使用环境变量
-import os
-
-class EnvConfig(Config):
-    def __init__(self):
-        super().__init__()
-        self.base_dir = os.getenv('MOVIE_DATA_DIR', self.base_dir)
-        self.save_dir = os.getenv('MOVIE_OUTPUT_DIR', self.save_dir)
-        self.n_estimators = int(os.getenv('MOVIE_N_ESTIMATORS', self.n_estimators))
+# 生成各类图表
+plot_boxplot_true_vs_pred(output_df)
+plot_error_distribution(output_df)
+plot_confusion_heatmap(output_df)
+plot_top20_feature_importance(model, feature_names)
 ```
 
 
 
-## 实验管理
+### 自定义配置
 
-### 实验追踪
+支持自定义图表样式和中文字体设置。系统会自动检测并配置合适的中文字体。
 
-系统提供实验管理功能，帮助管理和比较不同的模型版本：
+## 结果输出
 
-#### 实验文件组织
-每次实验都会自动创建一个完整的文件夹，包含所有相关信息：
+### 输出文件组织
+
+系统会将所有结果保存到output目录：
 ```
-experiments/
-└── LightGBM_CORAL_MovieLens_20241201_120000/
-    ├── config.json          # 实验配置参数
-    ├── results.json         # 性能指标结果
-    ├── predictions.csv      # 详细预测结果
-    ├── plots/              # 可视化图表
-    │   ├── error_analysis/  #   误差分析图
-    │   ├── feature_analysis/ #   特征分析图
-    │   └── prediction_plots/ #   预测效果图
-    ├── models/             # 训练好的模型
-    │   └── lightgbm_models.pkl
-    └── logs/               # 运行日志
-        └── experiment.log
-```
+output/
+├── predictions.csv                    # 详细预测结果
+├── boxplot_true_vs_pred.png          # 真实值vs预测值箱线图
+├── predicted_rating_hist.png         # 预测评分分布直方图
+├── prediction_error_hist.png         # 预测误差分布直方图
+├── mean_error_per_rating.png         # 各评分等级平均误差
+├── confusion_heatmap.png             # 混淆矩阵热力图
+├── top20_feature_importance.png      # Top20特征重要性
+├── feature_correlation.png           # 特征相关性热力图
+├── user_error_distribution.png       # 用户误差分布
+├── rmse_per_rating_level.png         # 各评分等级RMSE
+├── error_vs_popularity_line.png      # 误差与流行度关系
+└── feature_distributions.png         # 特征分布图
 
-### 实验管理
-
-项目支持实验版本管理，每次训练会自动保存：
-- 实验配置 (`config.json`)
-- 训练模型 (`model.pkl`) 
-- 评估结果 (`results.json`)
-- 预测数据 (`predictions.csv`)
-- 可视化图表 (`plots/`)
-
-```python
-from experiments.experiment import Experiment
-
-# 创建和管理实验
-exp = Experiment("LightGBM_CORAL_MovieLens", config.__dict__)
-exp.log_metric("rmse", rmse)
-exp.save_results()
+logs/                                 # 运行日志
+└── run_YYYYMMDD_HHMMSS.log          # 按时间戳命名的运行日志
 ```
 
 ## 性能评估
@@ -602,13 +499,79 @@ exp.save_results()
 
 在MovieLens数据集上的主要性能指标：
 
-- **RMSE**: 0.74-0.83 (均方根误差，越小越好)
-- **MAE**: 0.49-0.57 (平均绝对误差)
-- **准确率**: 37%-43% (完全匹配预测)
-- **训练时间**: ~3-5分钟 (标准配置)
+- **RMSE**: 0.8166 (均方根误差，越小越好)
+- **数据规模**: 100,836条评分记录
+- **用户数量**: 610个用户
+- **电影数量**: 9,742部电影
+- **特征维度**: 1,141个特征
+- **训练时间**: ~5.3分钟 (317秒，标准配置)
+
+#### 数据质量与异常值检测
+
+- **异常值比例**: 11.13% (11,223条记录)
+  - **行为异常**: 9.07% (用户评分行为异常)
+  - **时间异常**: 0.0% (时间异常检测已禁用)
+  - **多维异常**: 11.13% (多维特征空间异常)
 
 #### 性能特点
 
 - **高评分预测**: 4-5星评分预测相对困难，因为样本集中且差异细微
 - **低评分预测**: 1-2星评分样本较少但预测相对容易
 - **用户差异**: 活跃用户(评分多)的预测准确性明显高于新用户
+- **异常值处理**: 通过多维异常检测提升数据质量，改善模型性能
+
+## 异常值检测
+
+### 检测策略
+
+项目实现了多维度的异常值检测系统，用于识别和标记可能影响模型性能的异常数据：
+
+#### 1. 用户行为异常检测
+- **评分数量异常**: 使用Z-score检测评分数量异常的用户（阈值：4.0）
+- **评分方差异常**: 识别评分方差过小的用户（标准差<0.01且评分数≥10）
+- **极端评分用户**: 检测评分范围过窄的高频用户
+
+#### 2. 时间模式异常检测
+- **短时间间隔**: 检测10秒内连续评分的异常行为
+- **异常比例阈值**: 短间隔比例>95%且总间隔数≥10的用户
+
+#### 3. 多维特征异常检测
+- **IsolationForest算法**: 使用隔离森林检测多维特征空间中的异常点
+- **参数配置**: contamination=0.1, n_estimators=200
+- **最小评分要求**: 仅对评分数≥20的用户进行检测
+
+### 检测结果
+
+基于最新实验的异常值检测结果：
+
+| 异常类型 | 检测数量 | 占比 | 说明 |
+|----------|----------|------|------|
+| 行为异常 | 9,148 | 9.07% | 用户评分行为模式异常 |
+| 时间异常 | 0 | 0.0% | 时间异常检测已禁用 |
+| 多维异常 | 11,223 | 11.13% | 多维特征空间异常 |
+| **总计** | **11,223** | **11.13%** | **综合异常检测结果** |
+
+### 优化效果
+
+## 项目优化
+
+### 已完成的优化
+
+#### 1. 异常值检测优化
+- **参数精调**: 优化各类异常检测的阈值参数
+- **算法改进**: 改进IsolationForest的参数配置
+- **检测精度**: 显著降低误报率，提升检测准确性
+
+#### 2. 特征工程优化
+- **特征维度**: 构建1,141维综合特征向量
+- **特征类型**: 包含协同过滤、内容、文本、用户画像等多类特征
+- **特征选择**: 自动识别重要特征，提升模型效果
+
+#### 3. 模型性能优化
+- **CORAL算法**: 采用序数分类算法保持评分顺序特性
+- **LightGBM**: 使用高效的梯度提升框架
+- **参数调优**: 优化树的数量、学习率等关键参数
+
+---
+
+*最后更新时间: 2025年7月*

@@ -164,7 +164,7 @@ def validate_predictions(predictions: np.ndarray,
     
     min_val, max_val = expected_range
     
-    # 检查是否有NaN或无穷值
+    # 检查是否有空值或无穷值
     if np.any(np.isnan(predictions)) or np.any(np.isinf(predictions)):
         logger.warning("预测结果中包含NaN或无穷值")
         return False

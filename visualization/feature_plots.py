@@ -1,9 +1,49 @@
-# feature_plots.py
-# 特征相关可视化图表
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 特征可视化模块
 
-提供特征分析和可视化功能，包括特征重要性、相关性分析和分布可视化
+提供全面的特征分析和可视化功能，帮助理解模型特征的重要性、相关性和分布特征。
+
+核心功能：
+1. 特征重要性分析：
+   - Top-N特征重要性排名可视化
+   - 支持多模型特征重要性聚合
+   - 可解释特征与隐因子特征分类展示
+   - 特征重要性的统计分析（均值、标准差）
+
+2. 特征相关性分析：
+   - 特征与目标变量的相关性热力图
+   - 支持多种相关性计算方法（Pearson、Spearman、Kendall）
+   - 相关性阈值过滤和显著性检验
+   - 特征间相关性矩阵可视化
+
+3. 特征分布分析：
+   - 多特征分布的子图网格展示
+   - 支持直方图、密度图、箱线图等多种分布图
+   - 统计信息标注（均值、标准差、偏度、峰度）
+   - 异常值检测和标记
+
+特征分类体系：
+- 可解释特征：用户统计、电影统计、类型偏好、时间特征等
+- 隐因子特征：用户隐因子、物品隐因子、交叉隐因子等
+- 工程特征：TF-IDF特征、协同过滤特征、交互特征等
+
+可视化特点：
+- 支持中文字体显示
+- 专业的配色方案和样式
+- 详细的统计信息和图例
+- 高质量图表输出（300 DPI）
+- 灵活的布局和尺寸配置
+- 完整的异常处理和日志记录
+
+技术特点：
+- 基于matplotlib和seaborn的专业可视化
+- 支持大规模特征集的高效处理
+- 多模型特征重要性聚合算法
+- 统计显著性检验和置信区间
+- 内存优化的批量处理
+- 模块化的可扩展设计
 """
 
 import os
@@ -14,13 +54,17 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 from pathlib import Path
+import matplotlib.font_manager as fm
 
 from config import config
 from utils.logger import logger
 
-# 设置中文字体和样式
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
-plt.rcParams['axes.unicode_minus'] = False
+# 导入字体配置模块以解决中文显示问题
+from .font_config import setup_chinese_fonts
+
+# 设置中文字体
+setup_chinese_fonts()
+
 sns.set_style("whitegrid")
 sns.set_palette("husl")
 
@@ -32,36 +76,68 @@ def plot_top20_feature_importance(models: List[Any],
                                   top_n: int = 20,
                                   show_values: bool = True) -> Optional[plt.Figure]:
     """
-    绘制Top N特征重要性条形图
+    绘制前N个特征重要性条形图
+    
+    创建特征重要性排名的水平条形图，支持多模型聚合和特征分类展示。
+    帮助识别对模型预测最重要的特征，区分可解释特征和隐因子特征。
+    
+    功能特点：
+    - 多模型特征重要性聚合（计算均值和标准差）
+    - 可解释特征与隐因子特征分类处理
+    - 隐因子特征按类型分组（用户、物品、交叉隐因子）
+    - 误差条显示多模型间的重要性变异
+    - 详细的统计信息标注
+    
+    可视化内容：
+    - 水平条形图：特征重要性排名
+    - 误差条：多模型间的标准差（如适用）
+    - 数值标注：精确的重要性得分
+    - 统计信息：模型数量、特征统计、最高重要性
     
     Args:
-        models: 训练好的模型列表
-        X_train: 训练集特征DataFrame
-        whitelist_features: 可解释特征白名单列表
-        save_path: 图片保存路径
-        figsize: 图表尺寸
-        top_n: 显示前N个重要特征
-        show_values: 是否在条形图上显示数值
+        models: 训练好的模型列表，需具有feature_importances_属性
+        X_train: 训练集特征DataFrame，用于获取特征名称
+        whitelist_features: 可解释特征白名单，None时使用config中的白名单
+        save_path: 保存图表的路径，None时使用默认路径
+        figsize: 图表大小，默认(12, 8)
+        top_n: 显示前N个重要特征，默认20
+        show_values: 是否在条形图上显示数值，默认True
     
     Returns:
-        matplotlib图表对象
+        matplotlib图表对象，绘制失败时返回None
+        
+    Raises:
+        TypeError: 当X_train不是DataFrame时
+        ValueError: 当模型缺少feature_importances_属性时
+        
+    Example:
+        >>> models = [lgb_model1, lgb_model2, lgb_model3]
+        >>> X_train = pd.DataFrame({'feature1': [1,2,3], 'feature2': [4,5,6]})
+        >>> whitelist = ['feature1', 'feature2']
+        >>> fig = plot_top20_feature_importance(models, X_train, whitelist)
+        
+    Note:
+        - 隐因子特征会按类型分组聚合显示
+        - 多模型的重要性通过平均值聚合
+        - 标准差反映模型间重要性的一致性
+        - 可解释特征有助于业务理解和决策
     """
     # 参数验证
     if not models:
-        logger.warning("模型列表为空，无法绘制特征重要性图")
+        logger.warning("Model list is empty, cannot plot feature importance.")
         return None
     
     if not isinstance(X_train, pd.DataFrame):
-        raise TypeError("X_train必须是pandas DataFrame类型")
+        raise TypeError("X_train must be a pandas DataFrame.")
     
     if X_train.empty:
-        logger.warning("训练数据为空，无法绘制特征重要性图")
+        logger.warning("Training data is empty, cannot plot feature importance.")
         return None
     
-    # 验证模型是否有feature_importances_属性
+    # 验证模型是否具有feature_importances_属性
     for i, model in enumerate(models):
         if not hasattr(model, 'feature_importances_'):
-            raise ValueError(f"模型 {i} 没有feature_importances_属性")
+            raise ValueError(f"Model {i} does not have feature_importances_ attribute.")
     
     # 如果没有提供白名单，使用config中的白名单
     if whitelist_features is None:
@@ -75,20 +151,20 @@ def plot_top20_feature_importance(models: List[Any],
             try:
                 feature_importances = model.feature_importances_
                 if len(feature_importances) != len(X_train.columns):
-                    logger.warning(f"模型 {model_idx} 的特征重要性长度与训练数据特征数不匹配")
+                    logger.warning(f"Feature importance length of model {model_idx} does not match the number of features in training data.")
                     continue
                 
                 for fname, score in zip(X_train.columns, feature_importances):
                     importance_dict[fname].append(score)
             except Exception as e:
-                logger.warning(f"获取模型 {model_idx} 的特征重要性失败: {e}")
+                logger.warning(f"Failed to get feature importance from model {model_idx}: {e}")
                 continue
         
         if not importance_dict:
-            logger.error("无法获取任何模型的特征重要性")
+            logger.error("Could not get feature importance from any model.")
             return None
         
-        # 筛选可解释特征
+        # 过滤可解释特征
         interpretable_data = []
         for fname, scores in importance_dict.items():
             if fname in whitelist_features and scores:
@@ -96,12 +172,12 @@ def plot_top20_feature_importance(models: List[Any],
                 std_importance = np.std(scores) if len(scores) > 1 else 0
                 interpretable_data.append((fname, avg_importance, std_importance, len(scores)))
         
-        # 汇总潜在因子特征重要性
+        # 汇总隐因子特征重要性
         latent_groups = {
-            '用户潜在因子': lambda name: name.startswith("user_f"),
-            '物品潜在因子': lambda name: name.startswith("item_f"),
-            '交叉潜在因子': lambda name: name.startswith("cross_f"),
-            '其他潜在因子': lambda name: any(name.startswith(prefix) for prefix in ["latent_", "factor_", "embed_"])
+            '用户隐因子': lambda name: name.startswith("user_f"),
+            '物品隐因子': lambda name: name.startswith("item_f"),
+            '交叉隐因子': lambda name: name.startswith("cross_f"),
+            '其他隐因子': lambda name: any(name.startswith(prefix) for prefix in ["latent_", "factor_", "embed_"])
         }
         
         latent_data = []
@@ -122,7 +198,7 @@ def plot_top20_feature_importance(models: List[Any],
         total_data = interpretable_data + latent_data
         
         if not total_data:
-            logger.warning("没有有效的特征重要性数据")
+            logger.warning("No valid feature importance data available.")
             return None
         
         # 创建DataFrame
@@ -165,7 +241,7 @@ def plot_top20_feature_importance(models: List[Any],
                        va='center', fontsize=10, fontweight='bold')
         
         # 设置标题和标签
-        ax.set_title(f"Top {len(importance_df)} 特征重要性排序", 
+        ax.set_title(f"前{len(importance_df)}个特征重要性排名", 
                     fontsize=14, fontweight='bold', pad=20)
         ax.set_xlabel("平均重要性得分", fontsize=12)
         ax.set_ylabel("特征名称", fontsize=12)
@@ -176,7 +252,7 @@ def plot_top20_feature_importance(models: List[Any],
             f"模型数量: {len(models)}\n"
             f"总特征数: {len(X_train.columns)}\n"
             f"可解释特征: {len(interpretable_data)}\n"
-            f"潜在因子组: {len(latent_data)}\n"
+            f"隐因子组: {len(latent_data)}\n"
             f"最高重要性: {importance_df['importance_mean'].max():.4f}"
         )
         
@@ -196,8 +272,8 @@ def plot_top20_feature_importance(models: List[Any],
         Path(os.path.dirname(save_path)).mkdir(parents=True, exist_ok=True)
         
         fig.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-        logger.info(f"特征重要性图已保存到: {save_path}")
-        logger.info(f"显示了 {len(importance_df)} 个重要特征，基于 {len(models)} 个模型")
+        logger.info(f"Feature importance plot saved to: {save_path}")
+        logger.info(f"Displayed {len(importance_df)} important features, based on {len(models)} models.")
         
         return fig
         

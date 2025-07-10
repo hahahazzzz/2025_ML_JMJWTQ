@@ -4,6 +4,24 @@
 模型训练和评估模块
 
 提供基于LightGBM的序数分类模型训练和预测功能
+
+核心功能：
+1. CORAL序数分类：将序数分类问题转换为多个二分类问题
+2. 模型训练：训练多个LightGBM二分类器，每个预测评分是否>=某阈值
+3. 预测推理：使用训练好的模型进行序数分类预测
+4. 性能评估：计算准确率、RMSE、MAE等评估指标
+
+序数分类原理：
+- 对于10个类别（0-9），训练9个二分类器
+- 第k个分类器预测样本是否属于类别k或更高
+- 通过概率阈值将多个二分类结果转换为最终类别
+- 保持了评分间的顺序关系，比传统多分类更适合评分预测
+
+技术特点：
+- 支持类别特征处理
+- 提供详细的训练进度显示
+- 包含完整的输入验证和错误处理
+- 支持概率输出和自定义阈值
 """
 
 import time
@@ -21,6 +39,17 @@ logger = logging.getLogger(__name__)
 class ProgressBarCallback:
     """
     LightGBM训练进度条回调类
+    
+    为LightGBM模型训练提供可视化进度条，显示训练迭代进度。
+    
+    Attributes:
+        total (int): 总迭代次数
+        pbar (tqdm): 进度条对象
+    
+    Note:
+        - 自动在训练完成时关闭进度条
+        - 提供详细的时间和速度信息
+        - 支持自定义描述文本
     """
     
     def __init__(self, total: int, desc: str = "训练进度"):
@@ -28,8 +57,11 @@ class ProgressBarCallback:
         初始化进度条回调
         
         Args:
-            total: 总的训练迭代次数
+            total: 总迭代次数，必须大于0
             desc: 进度条描述文本
+            
+        Raises:
+            ValueError: 当total <= 0时抛出
         """
         if total <= 0:
             raise ValueError(f"总迭代次数必须大于0，当前值: {total}")
@@ -45,13 +77,14 @@ class ProgressBarCallback:
 
     def __call__(self, env):
         """
-        回调函数，在每次迭代时被调用
+        LightGBM回调函数接口
+        
+        Args:
+            env: LightGBM环境对象，包含当前迭代信息
         """
-        # 更新进度条
         if env.iteration < self.total:
             self.pbar.update(1)
         
-        # 训练完成时关闭进度条
         if env.iteration + 1 == env.end_iteration:
             self.pbar.close()
             logger.debug(f"训练完成，总迭代次数: {env.iteration + 1}")
@@ -67,23 +100,46 @@ def train_models(X_train: np.ndarray,
                 categorical_features: Optional[List[str]] = None,
                 verbose: bool = True) -> List[LGBMClassifier]:
     """
-    训练多个LightGBM二分类模型以实现序数分类
+    训练CORAL风格的序数分类模型
+    
+    实现序数分类的核心函数，使用CORAL（Consistent Rank Logits）方法
+    将序数分类问题转换为多个二分类问题。
+    
+    算法原理：
+    1. 对于K个类别，训练K-1个二分类器
+    2. 第i个分类器预测样本是否属于类别i或更高（y >= i）
+    3. 每个分类器使用相同的特征，但目标变量不同
+    4. 预测时通过概率阈值确定最终类别
+    
+    优势：
+    - 保持类别间的顺序关系
+    - 比传统多分类更适合评分预测
+    - 可以利用序数信息提高预测精度
     
     Args:
-        X_train: 训练集特征矩阵
-        y_train_raw: 训练集原始评分标签
-        num_classes: 总类别数量
-        n_estimators: 每个模型的树的数量
-        learning_rate: 学习率
-        num_leaves: 每棵树的叶子节点数
-        seed: 随机种子
-        categorical_features: 类别特征列表
-        verbose: 是否显示详细训练信息
+        X_train (np.ndarray): 训练特征矩阵，形状为(n_samples, n_features)
+        y_train_raw (np.ndarray): 训练标签，取值范围0到num_classes-1
+        num_classes (int): 类别总数，对应评分0.5到5.0的10个等级
+        n_estimators (int): 每个LightGBM模型的树数量
+        learning_rate (float): 学习率，控制每棵树的贡献
+        num_leaves (int): 每棵树的最大叶子节点数
+        seed (int): 随机种子，确保结果可复现
+        categorical_features (Optional[List[str]]): 类别特征名称列表
+        verbose (bool): 是否显示详细训练信息
     
     Returns:
-        训练好的模型列表
+        List[LGBMClassifier]: 训练好的二分类器列表，长度为num_classes-1
+    
+    Raises:
+        ValueError: 输入参数不合法时
+        RuntimeError: 训练过程中出现错误时
+    
+    Example:
+        >>> X_train = np.random.rand(1000, 50)
+        >>> y_train = np.random.randint(0, 10, 1000)
+        >>> models = train_models(X_train, y_train, num_classes=10)
+        >>> print(f"训练了{len(models)}个模型")
     """
-    # ==================== 参数验证 ====================
     if not isinstance(X_train, np.ndarray) or not isinstance(y_train_raw, np.ndarray):
         raise ValueError("输入的特征和标签必须是numpy数组")
     
@@ -96,13 +152,11 @@ def train_models(X_train: np.ndarray,
     if n_estimators <= 0 or learning_rate <= 0 or num_leaves <= 0:
         raise ValueError("模型参数必须为正数")
     
-    # 设置默认的类别特征
     if categorical_features is None:
         categorical_features = ['year_r', 'month_r', 'dayofweek_r']
     
     logger.info(f"开始训练序数分类模型: 样本数={len(X_train)}, 特征数={X_train.shape[1]}, 类别数={num_classes}")
     
-    # ==================== 生成序数目标 ====================
     try:
         y_train_ordinal = generate_ordinal_targets(y_train_raw, num_classes)
         logger.info(f"序数目标矩阵生成完成，形状: {y_train_ordinal.shape}")
@@ -110,11 +164,11 @@ def train_models(X_train: np.ndarray,
         logger.error(f"生成序数目标时出错: {e}")
         raise RuntimeError(f"无法生成序数目标: {e}")
     
-    # ==================== 模型训练 ====================
     models = []
     start_time = time.time()
     
     try:
+        # 训练多个二分类器，每个预测评分是否>=某个阈值
         for k in range(num_classes - 1):
             threshold_rating = (k + 1) * 0.5  # 对应的评分阈值
             
@@ -125,19 +179,17 @@ def train_models(X_train: np.ndarray,
                 print(f"正样本比例: {y_train_ordinal[:, k].mean():.3f}")
                 print(f"{'='*60}")
             
-            # 创建并配置模型
             model_k = LGBMClassifier(
-                objective='binary',           # 二分类任务
-                random_state=seed,           # 随机种子
-                n_estimators=n_estimators,   # 树的数量
-                learning_rate=learning_rate, # 学习率
-                num_leaves=num_leaves,       # 叶子节点数
-                verbosity=-1,               # 静默模式
-                n_jobs=1,                   # 使用单线程避免段错误
-                importance_type='gain'       # 特征重要性计算方式
+                objective='binary',
+                random_state=seed,
+                n_estimators=n_estimators,
+                learning_rate=learning_rate,
+                num_leaves=num_leaves,
+                verbosity=-1,
+                n_jobs=1,
+                importance_type='gain'
             )
             
-            # 训练模型
             logger.debug(f"开始训练第{k+1}个模型，目标变量统计: {np.bincount(y_train_ordinal[:, k])}")
             
             model_k.fit(
@@ -148,7 +200,6 @@ def train_models(X_train: np.ndarray,
             
             models.append(model_k)
             
-            # 记录训练信息
             train_score = model_k.score(X_train, y_train_ordinal[:, k])
             logger.info(f"第{k+1}个模型训练完成，训练准确率: {train_score:.4f}")
     
@@ -156,7 +207,6 @@ def train_models(X_train: np.ndarray,
         logger.error(f"模型训练过程中出错: {e}")
         raise RuntimeError(f"模型训练失败: {e}")
     
-    # ==================== 训练完成 ====================
     end_time = time.time()
     total_time = end_time - start_time
     
@@ -181,34 +231,37 @@ def predict(models: List[LGBMClassifier],
     """
     使用训练好的序数分类模型进行预测
     
-    该函数使用训练好的多个二分类器进行序数分类预测。
-    预测过程包括：
-    1. 使用每个二分类器预测概率
+    预测流程：
+    1. 对每个二分类器获取正类概率
     2. 根据阈值将概率转换为二分类结果
-    3. 统计超过阈值的分类器数量得到最终类别
+    3. 通过序数逻辑将多个二分类结果合并为最终类别
+    
+    序数预测逻辑：
+    - 如果所有分类器都预测为负类，则最终类别为0
+    - 如果前k个分类器预测为正类，后续为负类，则最终类别为k
+    - 如果所有分类器都预测为正类，则最终类别为最高类别
     
     Args:
-        models (List[LGBMClassifier]): 训练好的模型列表
+        models (List[LGBMClassifier]): 训练好的二分类器列表
         X_val (np.ndarray): 验证集特征矩阵，形状为(n_samples, n_features)
-        threshold (float, optional): 二分类阈值，默认为0.5
-        return_probabilities (bool, optional): 是否返回概率矩阵，默认为False
-        verbose (bool, optional): 是否显示预测信息，默认为True
+        threshold (float): 二分类概率阈值，范围[0, 1]
+        return_probabilities (bool): 是否同时返回概率矩阵
+        verbose (bool): 是否显示预测过程信息
     
     Returns:
         Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
-            如果return_probabilities=False: 返回预测的类别数组
-            如果return_probabilities=True: 返回(类别数组, 概率矩阵)的元组
+            - 如果return_probabilities=False：返回预测类别数组
+            - 如果return_probabilities=True：返回(预测类别, 概率矩阵)元组
     
     Raises:
-        ValueError: 当输入参数不合法时抛出异常
-        RuntimeError: 当预测过程中出现错误时抛出异常
+        ValueError: 输入参数不合法时
+        RuntimeError: 预测过程中出现错误时
     
-    Example:
-        >>> X_val = np.random.rand(100, 50)
-        >>> predictions = predict(models, X_val)
-        >>> print(f"预测了{len(predictions)}个样本")
+    Note:
+        - 概率矩阵形状为(n_samples, n_models)
+        - 预测类别范围为[0, n_models]
+        - 阈值调整可以平衡精确率和召回率
     """
-    # ==================== 参数验证 ====================
     if not models:
         raise ValueError("模型列表不能为空")
     
@@ -224,27 +277,23 @@ def predict(models: List[LGBMClassifier],
     if verbose:
         logger.info(f"开始预测: 样本数={n_samples}, 特征数={n_features}, 模型数={n_models}")
     
-    # ==================== 预测过程 ====================
     try:
-        # 初始化概率矩阵
+        # 收集所有模型的预测概率
         probabilities = np.zeros((n_samples, n_models))
         
-        # 使用每个模型进行预测
         for k, model_k in enumerate(models):
             if verbose and k == 0:
                 print(f"\n使用 {n_models} 个模型进行预测...")
             
-            # 预测概率（取正类概率）
-            prob_k = model_k.predict_proba(X_val)[:, 1]
+            prob_k = model_k.predict_proba(X_val)[:, 1]  # 取正类概率
             probabilities[:, k] = prob_k
             
             if verbose:
                 logger.debug(f"模型{k+1}预测完成，概率范围: [{prob_k.min():.3f}, {prob_k.max():.3f}]")
         
-        # 转换为类别预测
+        # 将概率转换为序数分类结果
         class_predictions = convert_ordinal_to_class(probabilities, threshold)
         
-        # 验证预测结果
         if not validate_predictions(class_predictions, expected_range=(0, n_models)):
             logger.warning("预测结果可能存在异常值")
         
@@ -257,7 +306,6 @@ def predict(models: List[LGBMClassifier],
         logger.error(f"预测过程中出错: {e}")
         raise RuntimeError(f"预测失败: {e}")
     
-    # ==================== 返回结果 ====================
     if return_probabilities:
         return class_predictions, probabilities
     else:
@@ -271,37 +319,46 @@ def evaluate_models(models: List[LGBMClassifier],
     """
     评估序数分类模型的性能
     
-    该函数提供了全面的模型评估指标，包括准确率、各类别的精确率和召回率等。
+    计算多种评估指标来全面评估模型性能，包括分类指标和回归指标。
+    
+    评估指标说明：
+    1. 准确率(Accuracy)：预测类别完全正确的比例
+    2. RMSE：将类别转换为评分后的均方根误差
+    3. MAE：将类别转换为评分后的平均绝对误差
     
     Args:
         models (List[LGBMClassifier]): 训练好的模型列表
-        X_val (np.ndarray): 验证集特征
+        X_val (np.ndarray): 验证集特征矩阵
         y_val (np.ndarray): 验证集真实标签
-        threshold (float, optional): 预测阈值，默认为0.5
+        threshold (float): 预测阈值
     
     Returns:
-        dict: 包含各种评估指标的字典
+        dict: 包含以下评估指标的字典：
+            - accuracy: 分类准确率
+            - rmse: 均方根误差（基于评分）
+            - mae: 平均绝对误差（基于评分）
+            - n_samples: 验证样本数量
+            - n_models: 模型数量
+            - threshold: 使用的预测阈值
+            - prediction_range: 预测值范围
+            - true_range: 真实值范围
     
-    Example:
-        >>> metrics = evaluate_models(models, X_val, y_val)
-        >>> print(f"准确率: {metrics['accuracy']:.4f}")
+    Note:
+        - RMSE和MAE通过label_to_rating函数将类别转换为评分
+        - 评估结果会记录到日志中
+        - 返回的字典可用于模型选择和超参数调优
     """
-    # 进行预测
     y_pred, probabilities = predict(models, X_val, threshold, return_probabilities=True, verbose=False)
     
-    # 计算基本指标
     accuracy = np.mean(y_pred == y_val)
     
-    # 计算RMSE（将类别转换回评分）
     from .model_utils import label_to_rating
     y_val_ratings = label_to_rating(y_val)
     y_pred_ratings = label_to_rating(y_pred)
     rmse = np.sqrt(np.mean((y_val_ratings - y_pred_ratings) ** 2))
     
-    # 计算MAE
     mae = np.mean(np.abs(y_val_ratings - y_pred_ratings))
     
-    # 构建评估结果
     evaluation_results = {
         'accuracy': accuracy,
         'rmse': rmse,

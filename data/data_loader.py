@@ -1,5 +1,22 @@
 # 数据加载和特征工程模块
 # 提供数据加载、特征生成和预处理功能
+#
+# 主要功能：
+# 1. 数据加载：加载评分、电影、标签数据，进行基础验证和预处理
+# 2. 协同过滤特征：使用SVD分解生成用户和物品的隐因子特征
+# 3. 内容特征：提取电影年份和类型的独热编码特征
+# 4. TF-IDF特征：将用户标签转换为TF-IDF向量特征
+# 5. 用户画像：生成用户评分统计和类型偏好特征
+# 6. 电影画像：生成电影评分统计特征
+# 7. 特征合并：整合所有特征并生成交叉特征
+#
+# 特征体系：
+# - 协同过滤特征：user_f*, item_f*, user_bias, item_bias, cross_f*
+# - 内容特征：year, 类型独热编码
+# - 文本特征：tag_* (TF-IDF)
+# - 统计特征：user_mean_rating, user_std_rating, movie_avg_rating等
+# - 偏好特征：user_genre_pref_*
+# - 时间特征：year_r, month_r, dayofweek_r
 
 import pandas as pd
 import numpy as np
@@ -145,7 +162,7 @@ def create_collaborative_filtering_features(ratings: pd.DataFrame) -> Tuple[pd.D
             if user_ratings.nnz > 0:
                 user_ratings.data -= user_means[i]
         
-        # 使用TruncatedSVD进行矩阵分解
+        # 使用截断奇异值分解进行矩阵分解
         logger.info("执行SVD分解")
         svd = TruncatedSVD(n_components=config.latent_dim, random_state=config.seed)
         user_factors = svd.fit_transform(rating_matrix_centered)
@@ -153,7 +170,7 @@ def create_collaborative_filtering_features(ratings: pd.DataFrame) -> Tuple[pd.D
         
         logger.info("SVD分解完成")
         
-        # 创建用户隐因子特征DataFrame
+        # 创建用户隐因子特征数据框
         user_f = pd.DataFrame(
             user_factors,
             columns=[f"user_f{i}" for i in range(config.latent_dim)]
@@ -161,7 +178,7 @@ def create_collaborative_filtering_features(ratings: pd.DataFrame) -> Tuple[pd.D
         user_f['userId'] = unique_users
         user_f = user_f[['userId'] + [f"user_f{i}" for i in range(config.latent_dim)]]
         
-        # 创建物品隐因子特征DataFrame
+        # 创建物品隐因子特征数据框
         item_f = pd.DataFrame(
             item_factors,
             columns=[f"item_f{i}" for i in range(config.latent_dim)]
@@ -169,13 +186,13 @@ def create_collaborative_filtering_features(ratings: pd.DataFrame) -> Tuple[pd.D
         item_f['movieId'] = unique_movies
         item_f = item_f[['movieId'] + [f"item_f{i}" for i in range(config.latent_dim)]]
         
-        # 创建用户偏置DataFrame
+        # 创建用户偏置数据框
         user_bias = pd.DataFrame({
             'userId': unique_users,
             'user_bias': user_means - global_mean
         })
         
-        # 创建物品偏置DataFrame
+        # 创建物品偏置数据框
         item_bias = pd.DataFrame({
             'movieId': unique_movies,
             'item_bias': item_means - global_mean
@@ -213,7 +230,7 @@ def create_content_features(movies: pd.DataFrame) -> Tuple[pd.DataFrame, MultiLa
         
         # 1. 提取年份信息
         logger.info("提取电影发行年份...")
-        # 使用正则表达式从标题中提取年份，格式如"Movie Title (1995)"
+        # 使用正则表达式从标题中提取年份，格式如"电影标题 (1995)"
         movies_copy['year'] = movies_copy['title'].str.extract(r'\((\d{4})\)', expand=False).astype(float)
         
         # 统计年份提取情况
@@ -233,7 +250,7 @@ def create_content_features(movies: pd.DataFrame) -> Tuple[pd.DataFrame, MultiLa
         # 将类型字符串按'|'分割为列表
         movies_copy['genres'] = movies_copy['genres'].str.split('|')
         
-        # 使用MultiLabelBinarizer进行One-Hot编码
+        # 使用多标签二值化器进行独热编码
         mlb = MultiLabelBinarizer()
         genre_features = mlb.fit_transform(movies_copy['genres'])
         
@@ -334,7 +351,7 @@ def create_tfidf_tag_features(ratings: pd.DataFrame, tags: pd.DataFrame) -> Tupl
         logger.info(f"TF-IDF矩阵形状: {tfidf_mat.shape}")
         logger.info(f"词汇表大小: {len(tfidf.vocabulary_) if hasattr(tfidf, 'vocabulary_') else 0}")
         
-        # 5. 转换为DataFrame格式
+        # 5. 转换为数据框格式
         logger.info("转换为DataFrame格式...")
         tag_df = pd.DataFrame(
             tfidf_mat, 

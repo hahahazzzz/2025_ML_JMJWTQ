@@ -16,8 +16,7 @@ from .error_analysis import (
     plot_rmse_per_rating,
     plot_confusion_heatmap,
     plot_user_error_distribution,
-    plot_error_vs_popularity,
-    plot_error_by_year
+    plot_error_vs_popularity
 )
 
 from .feature_plots import (
@@ -38,7 +37,6 @@ __all__ = [
     'plot_confusion_heatmap',
     'plot_user_error_distribution',
     'plot_error_vs_popularity',
-    'plot_error_by_year',
     
     # 特征相关图表
     'plot_top20_feature_importance',

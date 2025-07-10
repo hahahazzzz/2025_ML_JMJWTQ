@@ -3,7 +3,54 @@
 """
 误差分析可视化模块
 
-提供预测误差分析和可视化工具，包括误差分布、分层分析、混淆矩阵等
+提供全面的预测误差分析和可视化工具，帮助深入理解模型性能和预测质量。
+
+核心功能：
+1. 误差分布分析：
+   - 整体误差分布直方图和统计特征
+   - 误差的正态性检验和异常值检测
+   - 箱线图展示误差的四分位数分布
+
+2. 分层误差分析：
+   - 按真实评分等级的平均误差分析
+   - 各评分等级的RMSE和MAE对比
+   - 置信区间和样本数量统计
+
+3. 混淆矩阵分析：
+   - 预测评分与真实评分的混淆热力图
+   - 支持不同精度的评分离散化
+   - 多种归一化方式（行、列、总体）
+
+4. 用户维度分析：
+   - 用户级别的误差分布
+   - 用户预测准确性的差异分析
+   - 识别难以预测的用户群体
+
+5. 电影流行度分析：
+   - 误差与电影流行度的关系
+   - 热门电影vs冷门电影的预测准确性
+   - 流行度分箱分析
+
+6. 时间维度分析：
+   - 按电影年份的误差变化趋势
+   - 时间序列误差分析
+   - 年代效应对预测准确性的影响
+
+可视化特点：
+- 支持中文字体显示
+- 统一的配色方案和样式
+- 详细的统计信息标注
+- 高质量图表输出（300 DPI）
+- 自动保存和路径管理
+- 完整的异常处理和日志记录
+
+技术特点：
+- 基于matplotlib和seaborn的专业可视化
+- 支持多种误差度量（RMSE、MAE、偏差等）
+- 灵活的参数配置和自定义选项
+- 统计显著性检验和置信区间
+- 异常值检测和标记
+- 内存优化的大数据处理
 """
 
 import os
@@ -15,13 +62,17 @@ import pandas as pd
 from pathlib import Path
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from scipy import stats
+import matplotlib.font_manager as fm
 
 from config import config
 from utils.logger import logger
 
-# 设置中文字体和图表样式
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
-plt.rcParams['axes.unicode_minus'] = False
+# 导入字体配置模块以解决中文显示问题
+from .font_config import setup_chinese_fonts
+
+# 设置中文字体
+setup_chinese_fonts()
+
 sns.set_style("whitegrid")
 sns.set_palette("husl")
 
@@ -33,25 +84,53 @@ def plot_error_distribution(output_df: pd.DataFrame,
                            show_stats: bool = True,
                            show_outliers: bool = True) -> Optional[plt.Figure]:
     """
-    绘制预测误差分布直方图
+    绘制预测误差的分布图
+    
+    创建包含直方图、核密度估计和箱线图的综合误差分布分析图表。
+    帮助理解模型预测误差的整体分布特征、统计属性和异常值情况。
+    
+    可视化内容：
+    - 主图：误差分布直方图 + KDE曲线
+    - 统计信息：均值、标准差、中位数、偏度、峰度、MAE、RMSE
+    - 参考线：零误差线、均值线、中位数线
+    - 异常值边界：基于IQR方法的异常值检测
+    - 底图：误差箱线图，展示四分位数分布
     
     Args:
-        output_df: 包含预测误差的DataFrame
-        save_path: 图片保存路径
-        figsize: 图表尺寸
-        bins: 直方图的箱数
-        show_stats: 是否显示统计信息
-        show_outliers: 是否标注异常值
+        output_df: 包含预测误差的DataFrame，需包含'error'列或'true_rating'+'pred_rating'列
+        save_path: 保存图表的路径，None时使用默认路径
+        figsize: 图表大小，默认(12, 8)
+        bins: 直方图的箱数，默认30
+        show_stats: 是否显示详细统计信息，默认True
+        show_outliers: 是否标记异常值边界，默认True
     
     Returns:
-        matplotlib图表对象
+        matplotlib图表对象，绘制失败时返回None
+        
+    Raises:
+        TypeError: 当output_df不是DataFrame时
+        ValueError: 当DataFrame缺少必要列时
+        
+    Example:
+        >>> predictions_df = pd.DataFrame({
+        ...     'true_rating': [1, 2, 3, 4, 5],
+        ...     'pred_rating': [1.1, 1.9, 3.2, 3.8, 4.9],
+        ...     'error': [0.1, -0.1, 0.2, -0.2, -0.1]
+        ... })
+        >>> fig = plot_error_distribution(predictions_df)
+        
+    Note:
+        - 正态分布的误差表明模型预测无系统性偏差
+        - 偏度反映误差分布的对称性（0为完全对称）
+        - 峰度反映误差分布的尖锐程度（3为正态分布）
+        - 异常值可能指示数据质量问题或模型局限性
     """
     # 参数验证
     if not isinstance(output_df, pd.DataFrame):
-        raise TypeError("output_df必须是pandas DataFrame类型")
+        raise TypeError("output_df must be a pandas DataFrame")
     
     if output_df.empty:
-        logger.warning("DataFrame为空，无法绘制误差分布图")
+        logger.warning("DataFrame is empty, cannot plot error distribution.")
         return None
     
     # 计算或获取误差数据
@@ -59,19 +138,19 @@ def plot_error_distribution(output_df: pd.DataFrame,
         errors = output_df['error'].dropna()
     elif 'true_rating' in output_df.columns and 'pred_rating' in output_df.columns:
         errors = (output_df['pred_rating'] - output_df['true_rating']).dropna()
-        logger.info("从true_rating和pred_rating列计算误差")
+        logger.info("Calculating errors from 'true_rating' and 'pred_rating' columns.")
     else:
-        raise ValueError("DataFrame必须包含'error'列或'true_rating'和'pred_rating'列")
+        raise ValueError("DataFrame must contain 'error' column or both 'true_rating' and 'pred_rating' columns.")
     
     if errors.empty:
-        logger.warning("误差数据为空，无法绘制分布图")
+        logger.warning("Error data is empty, cannot plot distribution.")
         return None
     
     try:
         # 创建图表
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, height_ratios=[3, 1])
         
-        # 绘制主要的误差分布直方图
+        # 绘制主要误差分布直方图
         hist_plot = sns.histplot(
             errors, 
             bins=bins, 
@@ -86,7 +165,7 @@ def plot_error_distribution(output_df: pd.DataFrame,
         # 设置主图标题和标签
         ax1.set_title("预测误差分布分析", fontsize=16, fontweight='bold', pad=20)
         ax1.set_xlabel("预测误差 (预测值 - 真实值)", fontsize=12)
-        ax1.set_ylabel("频次", fontsize=12)
+        ax1.set_ylabel("频率", fontsize=12)
         ax1.grid(True, alpha=0.3)
         
         # 添加零误差参考线
@@ -108,8 +187,8 @@ def plot_error_distribution(output_df: pd.DataFrame,
                 f"均值: {mean_error:.4f}\n"
                 f"标准差: {std_error:.4f}\n"
                 f"中位数: {median_error:.4f}\n"
-                f"MAE: {mae:.4f}\n"
-                f"RMSE: {rmse:.4f}\n"
+                f"平均绝对误差: {mae:.4f}\n"
+                f"均方根误差: {rmse:.4f}\n"
                 f"偏度: {skew_error:.4f}\n"
                 f"峰度: {kurt_error:.4f}"
             )
@@ -125,7 +204,7 @@ def plot_error_distribution(output_df: pd.DataFrame,
             ax1.axvline(median_error, color='green', linestyle=':', alpha=0.8, 
                        label=f'中位数: {median_error:.3f}')
         
-        # 检测和标注异常值
+        # 检测并标记异常值
         if show_outliers:
             Q1 = errors.quantile(0.25)
             Q3 = errors.quantile(0.75)
@@ -138,12 +217,12 @@ def plot_error_distribution(output_df: pd.DataFrame,
                 ax1.axvline(lower_bound, color='purple', linestyle='-.', alpha=0.6, 
                            label=f'异常值边界: [{lower_bound:.2f}, {upper_bound:.2f}]')
                 ax1.axvline(upper_bound, color='purple', linestyle='-.', alpha=0.6)
-                logger.info(f"检测到 {len(outliers)} 个异常值 ({len(outliers)/len(errors)*100:.1f}%)")
+                logger.info(f"Detected {len(outliers)} outliers ({len(outliers)/len(errors)*100:.1f}%)")
         
         # 添加图例
         ax1.legend(loc='upper left')
         
-        # 绘制箱线图（下方子图）
+        # 绘制箱线图（底部子图）
         box_plot = ax2.boxplot(errors, vert=False, patch_artist=True, 
                               boxprops=dict(facecolor='lightcoral', alpha=0.7))
         ax2.set_xlabel("预测误差", fontsize=12)
@@ -162,13 +241,13 @@ def plot_error_distribution(output_df: pd.DataFrame,
         Path(os.path.dirname(save_path)).mkdir(parents=True, exist_ok=True)
         
         fig.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-        logger.info(f"误差分布图已保存到: {save_path}")
-        logger.info(f"误差统计: 均值={mean_error:.4f}, 标准差={std_error:.4f}, RMSE={rmse:.4f}")
+        logger.info(f"Error distribution plot saved to: {save_path}")
+        logger.info(f"Error statistics: Mean={mean_error:.4f}, Std={std_error:.4f}, RMSE={rmse:.4f}")
         
         return fig
         
     except Exception as e:
-        logger.error(f"绘制误差分布图失败: {e}")
+        logger.error(f"Failed to plot error distribution: {e}")
         if 'fig' in locals():
             plt.close(fig)
         return None
@@ -180,26 +259,26 @@ def plot_mean_error_per_rating(output_df: pd.DataFrame,
                               show_confidence: bool = True,
                               show_sample_size: bool = True) -> Optional[plt.Figure]:
     """
-    绘制按真实评分划分的平均预测误差条形图
-    
-    通过条形图展示模型在不同真实评分等级上的平均预测误差，
-    有助于识别模型在特定评分范围内的系统性偏差和预测准确性。
-    
+    绘制每个真实评分等级的平均预测误差。
+
+    该函数创建一个条形图，显示每个真实评分等级的平均预测误差。
+    有助于识别模型在不同评分范围内的系统性偏差和预测准确性。
+
     Args:
-        output_df (pd.DataFrame): 包含真实评分和预测误差的DataFrame
-                                必须包含'true_rating'列和'error'列或'pred_rating'列
-        save_path (Optional[str]): 图片保存路径，如果为None则使用默认路径
-        figsize (Tuple[int, int]): 图表尺寸，默认为(10, 8)
-        show_confidence (bool): 是否显示置信区间，默认为True
-        show_sample_size (bool): 是否显示样本数量，默认为True
-    
+        output_df (pd.DataFrame): 包含真实评分和预测误差的DataFrame。
+                                  必须包含'true_rating'列和'error'或'pred_rating'列。
+        save_path (Optional[str]): 保存图表的路径。如果为None，使用默认路径。
+        figsize (Tuple[int, int]): 图表大小，默认为(10, 8)。
+        show_confidence (bool): 是否显示置信区间，默认为True。
+        show_sample_size (bool): 是否显示样本数量，默认为True。
+
     Returns:
-        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None
-    
+        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None。
+
     Raises:
-        ValueError: 当DataFrame缺少必要列时抛出异常
-        TypeError: 当参数类型不正确时抛出异常
-    
+        ValueError: 如果DataFrame缺少必需的列。
+        TypeError: 如果任何参数类型不正确。
+
     Example:
         >>> predictions_df = pd.DataFrame({
         ...     'true_rating': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5],
@@ -207,12 +286,12 @@ def plot_mean_error_per_rating(output_df: pd.DataFrame,
         ...     'error': [0.2, -0.1, 0.1, -0.2, -0.1, 0.2, 0.1, -0.1, -0.2, 0.1]
         ... })
         >>> fig = plot_mean_error_per_rating(predictions_df)
-    
+
     Note:
-        - 正误差表示模型倾向于高估该评分等级
-        - 负误差表示模型倾向于低估该评分等级
-        - 理想情况下所有评分等级的平均误差都应接近0
-        - 置信区间显示误差估计的不确定性
+        - 正误差表示模型在该评分等级倾向于高估。
+        - 负误差表示模型在该评分等级倾向于低估。
+        - 理想情况下，所有评分等级的平均误差都应接近0。
+        - 置信区间显示误差估计的不确定性。
     """
     # 参数验证
     if not isinstance(output_df, pd.DataFrame):
@@ -280,7 +359,7 @@ def plot_mean_error_per_rating(output_df: pd.DataFrame,
         ax.axhline(0, color='gray', linestyle='--', alpha=0.8, linewidth=2, label='零误差线')
         
         # 设置标题和标签
-        ax.set_title("不同评分等级的平均预测误差", fontsize=14, fontweight='bold', pad=20)
+        ax.set_title("各评分等级的平均预测误差", fontsize=14, fontweight='bold', pad=20)
         ax.set_xlabel("真实评分", fontsize=12)
         ax.set_ylabel("平均预测误差", fontsize=12)
         ax.grid(True, alpha=0.3)
@@ -315,7 +394,7 @@ def plot_mean_error_per_rating(output_df: pd.DataFrame,
         Path(os.path.dirname(save_path)).mkdir(parents=True, exist_ok=True)
         
         fig.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-        logger.info(f"平均误差条形图已保存到: {save_path}")
+        logger.info(f"Mean error bar plot saved to: {save_path}")
         
         # 记录统计信息
         overall_bias = error_stats['mean_error'].mean()
@@ -340,38 +419,38 @@ def plot_rmse_per_rating(output_df: pd.DataFrame,
                         show_mae: bool = True,
                         show_sample_size: bool = True) -> Optional[plt.Figure]:
     """
-    绘制按真实评分等级划分的RMSE条形图
-    
-    通过条形图展示模型在不同真实评分等级上的均方根误差(RMSE)，
-    有助于识别模型在特定评分范围内的预测精度和稳定性。
-    
+    Plot RMSE per true rating level.
+
+    This function creates a bar plot showing the Root Mean Squared Error (RMSE) for each true rating level.
+    It helps to identify the prediction accuracy and stability of the model across different rating ranges.
+
     Args:
-        output_df (pd.DataFrame): 包含真实评分和预测评分的DataFrame
-                                必须包含'true_rating'和'pred_rating'列
-        save_path (Optional[str]): 图片保存路径，如果为None则使用默认路径
-        figsize (Tuple[int, int]): 图表尺寸，默认为(10, 8)
-        show_mae (bool): 是否同时显示MAE，默认为True
-        show_sample_size (bool): 是否显示样本数量，默认为True
-    
+        output_df (pd.DataFrame): DataFrame containing true and predicted ratings.
+                                  Must include 'true_rating' and 'pred_rating' columns.
+        save_path (Optional[str]): Path to save the plot. If None, a default path is used.
+        figsize (Tuple[int, int]): Figure size, default is (10, 8).
+        show_mae (bool): Whether to also display Mean Absolute Error (MAE), default is True.
+        show_sample_size (bool): Whether to display sample sizes, default is True.
+
     Returns:
-        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None
-    
+        Optional[plt.Figure]: A matplotlib Figure object, or None if plotting fails.
+
     Raises:
-        ValueError: 当DataFrame缺少必要列时抛出异常
-        TypeError: 当参数类型不正确时抛出异常
-    
+        ValueError: If the DataFrame is missing required columns.
+        TypeError: If any parameter has an incorrect type.
+
     Example:
         >>> predictions_df = pd.DataFrame({
         ...     'true_rating': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5],
         ...     'pred_rating': [1.2, 0.9, 2.1, 1.8, 2.9, 3.2, 4.1, 3.9, 4.8, 5.1]
         ... })
         >>> fig = plot_rmse_per_rating(predictions_df)
-    
+
     Note:
-        - RMSE值越小表示该评分等级的预测精度越高
-        - RMSE对大误差更敏感，能够突出异常预测
-        - MAE提供了误差的线性度量，便于理解
-        - 不同评分等级的RMSE差异反映模型的适应性
+        - A smaller RMSE value indicates higher prediction accuracy for that rating level.
+        - RMSE is more sensitive to large errors, highlighting outlier predictions.
+        - MAE provides a linear measure of error, which is easier to interpret.
+        - Differences in RMSE across rating levels reflect the model's adaptability.
     """
     # 参数验证
     if not isinstance(output_df, pd.DataFrame):
@@ -423,8 +502,8 @@ def plot_rmse_per_rating(output_df: pd.DataFrame,
             ax=ax1
         )
         
-        ax1.set_title("不同评分等级的RMSE", fontsize=14, fontweight='bold')
-        ax1.set_xlabel("真实评分", fontsize=12)
+        ax1.set_title("RMSE per Rating Level", fontsize=14, fontweight='bold')
+        ax1.set_xlabel("True Rating", fontsize=12)
         ax1.set_ylabel("RMSE", fontsize=12)
         ax1.grid(True, alpha=0.3)
         
@@ -491,8 +570,8 @@ def plot_rmse_per_rating(output_df: pd.DataFrame,
         Path(os.path.dirname(save_path)).mkdir(parents=True, exist_ok=True)
         
         fig.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-        logger.info(f"RMSE条形图已保存到: {save_path}")
-        logger.info(f"总体RMSE: {overall_rmse:.4f}, 总体MAE: {overall_mae:.4f}")
+        logger.info(f"RMSE bar plot saved to: {save_path}")
+        logger.info(f"Overall RMSE: {overall_rmse:.4f}, Overall MAE: {overall_mae:.4f}")
         
         return fig
         
@@ -669,12 +748,14 @@ def plot_confusion_heatmap(output_df: pd.DataFrame,
             f"评分精度: {rating_precision}"
         )
         
-        ax.text(1.02, 0.98, stats_text, transform=ax.transAxes,
-               verticalalignment='top', fontsize=10,
+        # 将统计信息放在图表左上角内部，避免被截断
+        ax.text(0.02, 0.98, stats_text, transform=ax.transAxes,
+               verticalalignment='top', horizontalalignment='left', fontsize=10,
                bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8))
         
-        # 调整布局
+        # 调整布局，增加右侧边距以防止文字被截断
         fig.tight_layout()
+        plt.subplots_adjust(right=0.85)
         
         # 保存图表
         if save_path is None:
@@ -1039,204 +1120,6 @@ def plot_error_vs_popularity(output_df: pd.DataFrame,
         
     except Exception as e:
         logger.error(f"绘制误差与热度关系图失败: {e}")
-        if 'fig' in locals():
-            plt.close(fig)
-        return None
-
-
-def plot_error_by_year(output_df: pd.DataFrame,
-                      df: pd.DataFrame,
-                      val_indices: Union[List[int], np.ndarray],
-                      save_path: Optional[str] = None,
-                      figsize: Tuple[int, int] = (14, 8),
-                      show_trend: bool = True) -> Optional[plt.Figure]:
-    """
-    绘制评分年份与预测误差的关系图
-    
-    通过箱线图展示不同评分年份的预测误差分布，
-    有助于识别模型在时间维度上的预测表现变化趋势。
-    
-    Args:
-        output_df (pd.DataFrame): 包含预测误差的DataFrame
-                                必须包含'error'列
-        df (pd.DataFrame): 原始数据DataFrame
-                         必须包含'year_r'列（评分年份）
-        val_indices (Union[List[int], np.ndarray]): 验证集索引
-        save_path (Optional[str]): 图片保存路径，如果为None则使用默认路径
-        figsize (Tuple[int, int]): 图表尺寸，默认为(14, 8)
-        show_trend (bool): 是否显示趋势线，默认为True
-    
-    Returns:
-        Optional[plt.Figure]: matplotlib图表对象，如果绘制失败则返回None
-    
-    Raises:
-        ValueError: 当DataFrame缺少必要列或索引不匹配时抛出异常
-        TypeError: 当参数类型不正确时抛出异常
-    
-    Example:
-        >>> predictions_df = pd.DataFrame({
-        ...     'error': [0.1, -0.2, 0.3, -0.1, 0.2]
-        ... })
-        >>> original_df = pd.DataFrame({
-        ...     'year_r': [2010, 2011, 2012, 2013, 2014]
-        ... })
-        >>> indices = [0, 1, 2, 3, 4]
-        >>> fig = plot_error_by_year(predictions_df, original_df, indices)
-    
-    Note:
-        - 早期年份的数据可能较少，误差分布可能不稳定
-        - 近期年份的数据通常更多，统计更可靠
-        - 趋势线有助于识别模型性能的时间变化模式
-        - 异常年份可能反映特殊的电影或用户行为模式
-    """
-    # 参数验证
-    if not isinstance(output_df, pd.DataFrame):
-        raise TypeError("output_df必须是pandas DataFrame类型")
-    
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("df必须是pandas DataFrame类型")
-    
-    if output_df.empty or df.empty:
-        logger.warning("输入DataFrame为空，无法绘制年份误差关系图")
-        return None
-    
-    if 'error' not in output_df.columns:
-        raise ValueError("output_df缺少'error'列")
-    
-    if 'year_r' not in df.columns:
-        raise ValueError("df缺少'year_r'列")
-    
-    # 验证索引
-    val_indices = np.array(val_indices)
-    if len(val_indices) != len(output_df):
-        raise ValueError(f"验证集索引长度({len(val_indices)})与输出DataFrame长度({len(output_df)})不匹配")
-    
-    if val_indices.max() >= len(df):
-        raise ValueError("验证集索引超出原始DataFrame范围")
-    
-    try:
-        # 合并数据
-        output_with_time = output_df.copy()
-        output_with_time['year_r'] = df.loc[val_indices, 'year_r'].values
-        
-        # 清理数据
-        output_with_time = output_with_time.dropna(subset=['error', 'year_r'])
-        
-        if output_with_time.empty:
-            logger.warning("清理后的数据为空，无法绘制年份误差关系图")
-            return None
-        
-        # 确保年份为整数
-        output_with_time['year_r'] = output_with_time['year_r'].astype(int)
-        
-        # 过滤异常年份（假设合理年份范围为1990-2030）
-        valid_years = output_with_time[
-            (output_with_time['year_r'] >= 1990) & 
-            (output_with_time['year_r'] <= 2030)
-        ]
-        
-        if valid_years.empty:
-            logger.warning("没有有效年份数据，无法绘制关系图")
-            return None
-        
-        output_with_time = valid_years
-        
-        # 计算每年的统计信息
-        yearly_stats = output_with_time.groupby('year_r')['error'].agg([
-            'mean', 'median', 'std', 'count'
-        ]).reset_index()
-        
-        # 过滤样本数量过少的年份（至少10个样本）
-        yearly_stats = yearly_stats[yearly_stats['count'] >= 10]
-        
-        if yearly_stats.empty:
-            logger.warning("没有足够样本的年份数据，无法绘制关系图")
-            return None
-        
-        # 创建图表
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, height_ratios=[3, 1])
-        
-        # 主图：箱线图
-        valid_years_for_plot = output_with_time[
-            output_with_time['year_r'].isin(yearly_stats['year_r'])
-        ]
-        
-        box_plot = sns.boxplot(
-            data=valid_years_for_plot, 
-            x='year_r', 
-            y='error', 
-            ax=ax1,
-            palette="viridis"
-        )
-        
-        # 添加零误差参考线
-        ax1.axhline(0, color='red', linestyle='--', alpha=0.8, label='零误差线')
-        
-        # 添加趋势线
-        if show_trend and len(yearly_stats) > 2:
-            # 使用线性回归拟合趋势
-            from scipy.stats import linregress
-            slope, intercept, r_value, p_value, std_err = linregress(
-                yearly_stats['year_r'], yearly_stats['mean']
-            )
-            
-            trend_line = slope * yearly_stats['year_r'] + intercept
-            ax1.plot(yearly_stats['year_r'], trend_line, 
-                    color='orange', linewidth=2, alpha=0.8,
-                    label=f'趋势线 (R²={r_value**2:.3f})')
-        
-        # 设置标题和标签
-        ax1.set_title("不同评分年份的预测误差分布", fontsize=14, fontweight='bold', pad=20)
-        ax1.set_xlabel("评分年份", fontsize=12)
-        ax1.set_ylabel("预测误差", fontsize=12)
-        ax1.grid(True, alpha=0.3)
-        ax1.legend()
-        
-        # 旋转x轴标签以避免重叠
-        ax1.tick_params(axis='x', rotation=45)
-        
-        # 添加统计信息
-        overall_trend = "上升" if yearly_stats['mean'].iloc[-1] > yearly_stats['mean'].iloc[0] else "下降"
-        stats_text = (
-            f"年份范围: {yearly_stats['year_r'].min()} - {yearly_stats['year_r'].max()}\n"
-            f"总样本数: {len(valid_years_for_plot)}\n"
-            f"有效年份数: {len(yearly_stats)}\n"
-            f"整体趋势: {overall_trend}\n"
-            f"最大平均误差: {yearly_stats['mean'].max():.4f}\n"
-            f"最小平均误差: {yearly_stats['mean'].min():.4f}"
-        )
-        
-        ax1.text(0.02, 0.98, stats_text, transform=ax1.transAxes,
-                verticalalignment='top', fontsize=10,
-                bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
-        
-        # 下图：每年样本数量
-        ax2.bar(yearly_stats['year_r'], yearly_stats['count'], 
-               alpha=0.7, color='lightblue')
-        ax2.set_xlabel("评分年份", fontsize=12)
-        ax2.set_ylabel("样本数量", fontsize=12)
-        ax2.set_title("各年份样本数量分布", fontsize=12)
-        ax2.grid(True, alpha=0.3)
-        ax2.tick_params(axis='x', rotation=45)
-        
-        # 调整布局
-        fig.tight_layout()
-        
-        # 保存图表
-        if save_path is None:
-            save_path = os.path.join(config.save_dir, "error_by_rating_year.png")
-        
-        # 确保保存目录存在
-        Path(os.path.dirname(save_path)).mkdir(parents=True, exist_ok=True)
-        
-        fig.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-        logger.info(f"年份误差关系图已保存到: {save_path}")
-        logger.info(f"分析了 {len(yearly_stats)} 个年份，总样本数: {len(valid_years_for_plot)}")
-        
-        return fig
-        
-    except Exception as e:
-        logger.error(f"绘制年份误差关系图失败: {e}")
         if 'fig' in locals():
             plt.close(fig)
         return None
