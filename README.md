@@ -5,6 +5,7 @@
 4. 使用合理的评价方法，如RMSE等（由于评级以五星为单位，以半星为增量（0.5星-5.0星），考虑RMSE是否合理）
 
 # 本项目组员：金明俊，王泰乾
+# 全部成员：郑睿韬，柳彤，金明俊，王泰乾
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![LightGBM](https://img.shields.io/badge/LightGBM-Latest-green.svg)](https://lightgbm.readthedocs.io/)
