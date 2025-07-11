@@ -125,7 +125,6 @@
 │   ├── error_analysis.py        # 误差分析图表
 │   ├── feature_plots.py         # 特征分析图表
 │   ├── font_config.py           # 中文字体配置
-│   └── font_fix.py              # 字体修复工具
 │
 ├── fonts/                       # 字体文件目录
 ├── output/                      # 输出目录
