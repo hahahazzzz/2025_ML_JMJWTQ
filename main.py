@@ -384,7 +384,6 @@ def main():
         raise
     
     finally:
-        # 清理工作完成
         pass
     
     return rmse if 'rmse' in locals() else None
